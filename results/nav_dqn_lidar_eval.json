@@ -1,0 +1,14 @@
+{
+  "episodes": 300,
+  "success_rate": 0.86,
+  "collision_rate": 0.1,
+  "timeout_rate": 0.04,
+  "mean_return": 13.071765368515091,
+  "std_return": 9.01083680944728,
+  "mean_steps": 71.43,
+  "path_efficiency": 0.9457262330980063,
+  "algorithm": "Double Dueling DQN",
+  "obs_mode": "lidar",
+  "train_steps": 1000000,
+  "train_time_s": 2211.536546945572
+}

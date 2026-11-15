@@ -1,0 +1,221 @@
+{
+  "runtime": "onnxruntime",
+  "stats": {
+    "nav_attempts": 6,
+    "nav_success": 6,
+    "collisions": 0,
+    "picks": 2,
+    "places": 2,
+    "manip_failures": 0,
+    "nav_steps": 411
+  },
+  "distance_m": 19.37206718176603,
+  "battery": 70.94189922735093,
+  "inventory": {
+    "shelf a": [
+      [
+        "green",
+        "block"
+      ]
+    ],
+    "shelf b": [
+      [
+        "yellow",
+        "parcel"
+      ]
+    ],
+    "shelf c": [
+      [
+        "orange",
+        "cube"
+      ],
+      [
+        "purple",
+        "tote"
+      ]
+    ],
+    "workbench": [
+      [
+        "red",
+        "block"
+      ],
+      [
+        "green",
+        "block"
+      ],
+      [
+        "blue",
+        "block"
+      ]
+    ],
+    "conveyor": [
+      [
+        "red",
+        "box"
+      ]
+    ],
+    "packing station": [
+      [
+        "blue",
+        "crate"
+      ]
+    ],
+    "loading bay": [
+      [
+        "yellow",
+        "box"
+      ]
+    ],
+    "charging dock": []
+  },
+  "turns": [
+    {
+      "user": "hello jetbot",
+      "frame": {
+        "intent": "greet",
+        "confidence": 0.9998,
+        "slots": {}
+      },
+      "response": "Hello! I am EdgeBot, your warehouse assistant. How can I help?",
+      "success": true,
+      "timings": {
+        "nlu_ms": 1.0669769999367418,
+        "execute_s": 4.522000381257385e-06,
+        "asr_s": 0.059968806999677327
+      },
+      "asr_text": "Hello JetBot."
+    },
+    {
+      "user": "move the red box from shelf a to the conveyor",
+      "frame": {
+        "intent": "pick_place",
+        "confidence": 0.9998,
+        "slots": {
+          "object": "box",
+          "source": "shelf a",
+          "destination": "conveyor",
+          "color": "red"
+        }
+      },
+      "response": "Picked up the red box from the shelf A. Delivered the red box to the conveyor.",
+      "success": true,
+      "timings": {
+        "nlu_ms": 0.9396920004292042,
+        "execute_s": 2.4013657099994816,
+        "asr_s": 0.10072378099994239
+      },
+      "asr_text": "Move the red box from shelf A to the conveyor."
+    },
+    {
+      "user": "pick up the box",
+      "frame": {
+        "intent": "pick",
+        "confidence": 0.9995,
+        "slots": {
+          "object": "box"
+        }
+      },
+      "response": "Which colour item should I pick up?",
+      "success": null,
+      "timings": {
+        "nlu_ms": 0.9352950000902638,
+        "execute_s": 7.97099983174121e-06,
+        "asr_s": 0.09160842399978719
+      },
+      "asr_text": "Pick up the box."
+    },
+    {
+      "user": "the blue one",
+      "frame": {
+        "intent": "stack",
+        "confidence": 0.5188,
+        "slots": {
+          "color": "blue"
+        }
+      },
+      "response": "Picked up the blue crate from the shelf B.",
+      "success": true,
+      "timings": {
+        "nlu_ms": 0.8545009995941655,
+        "execute_s": 1.3159885149998445,
+        "asr_s": 0.05175899100049719
+      },
+      "asr_text": "The blue one."
+    },
+    {
+      "user": "put it on the packing station",
+      "frame": {
+        "intent": "place",
+        "confidence": 0.9998,
+        "slots": {
+          "destination": "packing station"
+        }
+      },
+      "response": "Delivered the blue crate to the packing station.",
+      "success": true,
+      "timings": {
+        "nlu_ms": 1.0481839999556541,
+        "execute_s": 1.4723827520001578,
+        "asr_s": 0.10225036600058957
+      },
+      "asr_text": "Put it on the packing station."
+    },
+    {
+      "user": "stack the red green and blue blocks at the workbench",
+      "frame": {
+        "intent": "stack",
+        "confidence": 0.9998,
+        "slots": {
+          "colors": [
+            "red",
+            "green",
+            "blue"
+          ],
+          "destination": "workbench"
+        }
+      },
+      "response": "Built a tower of red, green, blue blocks at the workbench, bottom to top.",
+      "success": true,
+      "timings": {
+        "nlu_ms": 1.1466370006019133,
+        "execute_s": 5.029940891000479,
+        "asr_s": 0.13394824099941616
+      },
+      "asr_text": "Stack the red, green and blue blocks at the workbench."
+    },
+    {
+      "user": "what is your status",
+      "frame": {
+        "intent": "status",
+        "confidence": 0.9998,
+        "slots": {}
+      },
+      "response": "I am at the workbench, not carrying anything. Battery at 77 percent, 15.1 metres travelled. Last task: stacking red, green, blue at the workbench.",
+      "success": true,
+      "timings": {
+        "nlu_ms": 0.8787550004853983,
+        "execute_s": 1.6110000615299214e-05,
+        "asr_s": 0.07298051599991595
+      },
+      "asr_text": "What is your status?"
+    },
+    {
+      "user": "go back to the charging dock",
+      "frame": {
+        "intent": "navigate",
+        "confidence": 0.9998,
+        "slots": {
+          "destination": "charging dock"
+        }
+      },
+      "response": "Arrived at the charging dock.",
+      "success": true,
+      "timings": {
+        "nlu_ms": 0.7143180000639404,
+        "execute_s": 0.6310133460001452,
+        "asr_s": 0.11296289199981402
+      },
+      "asr_text": "Go back to the charging dock."
+    }
+  ]
+}

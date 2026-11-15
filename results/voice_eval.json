@@ -1,0 +1,156 @@
+{
+  "n": 150,
+  "asr_model": "whisper-base",
+  "asr_device": "cuda",
+  "asr_compute_type": "float16",
+  "tts_rtf_cpu": 0.13474084495915487,
+  "conditions": {
+    "clean": {
+      "wer": 0.02755617802676626,
+      "intent_acc": 0.9666666666666667,
+      "slot_f1": 0.9584352078239609,
+      "frame_acc": 0.94
+    },
+    "snr20": {
+      "wer": 0.03007469654528478,
+      "intent_acc": 0.96,
+      "slot_f1": 0.9682151589242055,
+      "frame_acc": 0.9466666666666667
+    },
+    "snr10": {
+      "wer": 0.07587714681832329,
+      "intent_acc": 0.94,
+      "slot_f1": 0.9631449631449631,
+      "frame_acc": 0.9133333333333333
+    }
+  },
+  "text_only_frame_acc": 0.9733333333333334,
+  "examples": [
+    {
+      "reference": "okay move the red tote from the charging dock to the shelf b",
+      "asr": "Okay move the red tote from the charging dock to the shelf B.",
+      "intent": "pick_place",
+      "slots": {
+        "object": "tote",
+        "source": "charging dock",
+        "destination": "shelf b",
+        "color": "red"
+      },
+      "correct": true
+    },
+    {
+      "reference": "robot release it at the charging dock for me",
+      "asr": "Robot release it at the charging dock for me.",
+      "intent": "place",
+      "slots": {
+        "destination": "charging dock"
+      },
+      "correct": true
+    },
+    {
+      "reference": "pick up that red tote",
+      "asr": "Pick up the red tote.",
+      "intent": "pick",
+      "slots": {
+        "object": "tote",
+        "color": "red"
+      },
+      "correct": true
+    },
+    {
+      "reference": "now hey robot thanks",
+      "asr": "Now Hey Robot Thanks.",
+      "intent": "greet",
+      "slots": {},
+      "correct": true
+    },
+    {
+      "reference": "could you collect the blue cube and deliver it to the workbench for me",
+      "asr": "Could you collect the blue cube and deliver it to the workbench for me?",
+      "intent": "pick_place",
+      "slots": {
+        "object": "cube",
+        "destination": "workbench",
+        "color": "blue"
+      },
+      "correct": true
+    },
+    {
+      "reference": "hey jetbot collect the green crate and deliver it to the workbench right away",
+      "asr": "Hey JetBot collect the green crate and deliver it to the workbench right away.",
+      "intent": "pick_place",
+      "slots": {
+        "object": "crate",
+        "destination": "workbench",
+        "color": "green"
+      },
+      "correct": true
+    },
+    {
+      "reference": "jetbot stack blue red and yellow right away",
+      "asr": "JetBot stack blue red and yellow right away.",
+      "intent": "stack",
+      "slots": {
+        "colors": [
+          "blue",
+          "red",
+          "yellow"
+        ]
+      },
+      "correct": true
+    },
+    {
+      "reference": "could you carry the purple box to the shelf c right away",
+      "asr": "Could you carry the purple box to the shelf C right away?",
+      "intent": "pick_place",
+      "slots": {
+        "object": "box",
+        "destination": "shelf c",
+        "color": "purple"
+      },
+      "correct": true
+    },
+    {
+      "reference": "robot hello friend right away",
+      "asr": "Robot hello friend right away.",
+      "intent": "greet",
+      "slots": {},
+      "correct": true
+    },
+    {
+      "reference": "please help please",
+      "asr": "Please help please.",
+      "intent": "help",
+      "slots": {},
+      "correct": true
+    },
+    {
+      "reference": "can you pick the yellow cube for me",
+      "asr": "Can you pick the yellow cube for me?",
+      "intent": "pick",
+      "slots": {
+        "object": "cube",
+        "color": "yellow"
+      },
+      "correct": true
+    },
+    {
+      "reference": "now cancel the mission",
+      "asr": "Now cancel the mission.",
+      "intent": "stop",
+      "slots": {},
+      "correct": true
+    }
+  ],
+  "asr_rtf": {
+    "cuda_float16": {
+      "rtf": 0.07771751527547381,
+      "mean_latency_s": 0.15992690864008183
+    },
+    "cpu_int8": {
+      "rtf": 0.49966722210518216,
+      "mean_latency_s": 1.0282139604799887
+    }
+  },
+  "mean_utterance_s": 2.0577975
+}

@@ -1,0 +1,14 @@
+{
+  "episodes": 300,
+  "success_rate": 0.96,
+  "collision_rate": 0.02,
+  "timeout_rate": 0.02,
+  "mean_return": 15.767724163163978,
+  "std_return": 5.224490393829392,
+  "mean_steps": 67.64,
+  "path_efficiency": 0.9600621355654108,
+  "algorithm": "PPO",
+  "action_mode": "continuous",
+  "train_steps": 5000000,
+  "train_time_s": 1457.7529916763306
+}
