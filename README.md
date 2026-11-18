@@ -10,7 +10,8 @@ You say *"move the red box from shelf A to the conveyor"*. EdgeBot transcribes i
 
 | Deliverable | Location |
 |---|---|
-| Project report (13 pages) | [`docs/report.pdf`](docs/report.pdf) |
+| Project report (submission, 33 pages) | [`docs/project_report.pdf`](docs/project_report.pdf) |
+| Technical write-up (13 pages) | [`docs/report.pdf`](docs/report.pdf) |
 | Presentation slides (14 slides) | [`docs/slides.pdf`](docs/slides.pdf) |
 | End-to-end demo video | [`results/media/edgebot_demo.mp4`](results/media/edgebot_demo.mp4) |
 | Manipulation lab animation | [`results/media/manipulation_demo.gif`](results/media/manipulation_demo.gif) |
