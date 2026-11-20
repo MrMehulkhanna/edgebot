@@ -94,6 +94,7 @@ class FrameSink:
 class EdgeBot:
     def __init__(self, nlu, policy, asr=None, tts=None, sink: FrameSink | None = None, seed: int = 0):
         self.nlu, self.policy, self.asr, self.tts = nlu, policy, asr, tts
+        self.use_shield = True
         self.sink = sink or FrameSink(enabled=False)
         self.scn = wh.scenario()
         self.env = JetBotNavEnv(fixed_scenario=self.scn, max_steps=100_000)
@@ -320,7 +321,7 @@ class EdgeBot:
         start = self.pose.copy()
         self.last_task = f"driving to the {pretty(dest)}"
         for step in range(max_steps):
-            obs, _, term, _, info = env.step(shield(self.policy(obs)))
+            obs, _, term, _, info = env.step(shield(self.policy(obs)) if self.use_shield else self.policy(obs))
             if k < len(wps) - 1 and info["distance"] < 0.35:
                 k += 1
                 env.set_goal(wps[k])

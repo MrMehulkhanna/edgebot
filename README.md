@@ -144,6 +144,14 @@ cd edgebot && python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Web control panel** (type or speak commands, watch the robot, toggle the shield, run the novelty experiment):
+
+```bash
+python scripts/web_app.py
+```
+
+Then open http://localhost:8000 in any browser.
+
 Trained models ship in `checkpoints/`, so the demo runs straight away. On first use, Whisper-base and the Piper voice download from the Hugging Face Hub and are cached.
 
 ```bash
