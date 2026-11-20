@@ -63,6 +63,22 @@ def run_turn(text=None, audio=None, shield=True):
             "video": video and f"/media/{video}", "reply": reply and f"/media/{reply}"}
 
 
+def decode_browser_audio(path) -> "np.ndarray":
+    """Browser recording (webm/ogg/mp4) -> 16 kHz mono float32, decoded with PyAV."""
+    import av
+    import numpy as np
+
+    out = []
+    with av.open(str(path)) as c:
+        rs = av.AudioResampler(format="s16", layout="mono", rate=16_000)
+        for frame in c.decode(audio=0):
+            for f in rs.resample(frame):
+                out.append(f.to_ndarray().reshape(-1))
+        for f in rs.resample(None):
+            out.append(f.to_ndarray().reshape(-1))
+    return (np.concatenate(out) if out else np.zeros(0, np.int16)).astype(np.float32) / 32768.0
+
+
 def shield_test(episodes):
     from edgebot.edge.export import OnnxPolicy
     from edgebot.rl.evaluate import evaluate_nav
@@ -145,12 +161,17 @@ class Handler(BaseHTTPRequestHandler):
                 if self.path.startswith("/api/voice"):
                     if STATE["asr"] is None:
                         return self._json({"error": "speech recognition is off (started with --no-speech)"}, 400)
-                    from faster_whisper import decode_audio
-
                     tmp = MEDIA / f"in_{int(time.time() * 1000)}.webm"
                     tmp.write_bytes(raw)
-                    audio = decode_audio(str(tmp), sampling_rate=16_000)
-                    return self._json(run_turn(audio=audio, shield="shield=0" not in self.path))
+                    audio = decode_browser_audio(tmp)
+                    if len(audio) < 8_000:
+                        return self._json({"error": "Recording too short. Click Speak, talk for 2-3 seconds, then Stop."}, 400)
+                    text, _ = STATE["asr"].transcribe(audio)
+                    if not text.strip():
+                        return self._json({"error": "I could not hear any words. Check the microphone and try again."}, 400)
+                    res = run_turn(text=text, shield="shield=0" not in self.path)
+                    res["heard"] = text
+                    return self._json(res)
                 if self.path == "/api/reset":
                     STATE["bot"] = new_bot()
                     return self._json({"ok": True})
@@ -219,6 +240,7 @@ function busy(on,msg){document.querySelectorAll('button').forEach(b=>b.disabled=
 const pct=x=>(100*x).toFixed(1)+'%';
 function esc(s){return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
 function render(r){
+ if(r.heard)$('txt').value=r.heard;
  if(r.error){$('pipe').innerHTML='<b>Error</b><span class="err">'+esc(r.error)+'</span>';return}
  const slots=Object.entries(r.frame.slots||{}).map(([k,v])=>'<code>'+esc(k)+'='+esc(v)+'</code>').join(' ')||'<span class="muted">none</span>';
  const d=r.delta;
