@@ -1,0 +1,151 @@
+\documentclass[10pt,a4paper]{extarticle}
+\usepackage[margin=1.1cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,multicol,xcolor,enumitem,amsmath,amssymb,booktabs,tabularx}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=12pt}
+\setlength{\parindent}{0pt}
+\setlength{\columnsep}{14pt}
+\definecolor{acc}{HTML}{1D4ED8}
+\definecolor{say}{HTML}{15803D}
+\newcommand{\hd}[1]{\par\vspace{5pt}{\color{acc}\large\bfseries #1}\par\vspace{2pt}\hrule\vspace{3pt}}
+\newcommand{\Q}[1]{\par\vspace{3pt}\textbf{Q: #1}\par}
+\newcommand{\A}[1]{{\color{say}#1}\par}
+\pagestyle{empty}
+\begin{document}
+
+{\LARGE\bfseries EdgeBot --- Viva Cheat Sheet}\hfill{\small Mehul Khanna \textbullet\ UCS760 Reinforcement Learning}
+\vspace{4pt}
+
+\fcolorbox{acc}{blue!4}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{
+\textbf{30-second pitch (read aloud):}
+``EdgeBot is a voice-commanded warehouse robot, built fully in simulation. You say \emph{move the red box from
+shelf A to the conveyor}. Whisper turns speech to text, a small BERT model finds the task and the details, A* plans
+a rough route, and a \textbf{PPO reinforcement-learning policy} drives the robot using a 24-beam lidar while
+avoiding clutter. My novelty is a \textbf{lidar safety shield} between the policy and the motors: it needs no map
+and no training, and it brought collisions to \textbf{0\%}, even for 8-bit compressed edge models.''}}
+
+\begin{multicols}{2}
+
+\hd{0. Live demo (\texttt{make web} $\to$ localhost:8000)}
+Press \textbf{Reset warehouse}, then:
+\begin{enumerate}
+\item \texttt{hello jetbot}
+\item \texttt{move the red box from shelf a to the conveyor}
+\item \texttt{move the yellow parcel from shelf b to the packing station}
+\item \texttt{what is your status}
+\item \texttt{go back to the charging dock}
+\end{enumerate}
+Bonus: \texttt{pick up the box} $\to$ ``Which colour?'' $\to$ \texttt{the blue one}.\\
+Then click \textbf{Run on 30 unseen warehouses}: collisions go to 0\% with the shield on.\\
+Map colours: \textbf{purple} = A* route, \textbf{blue} = driven path, \textbf{red} = lidar.
+
+\hd{1. The 4 main questions}
+\textbf{What is the project?} Voice $\to$ Whisper $\to$ BERT (intent + slots) $\to$ A* route $\to$ \textbf{PPO
+drives} $\to$ \textbf{Shield checks} $\to$ arm picks/places $\to$ spoken reply.\\
+\textbf{What problem?} Warehouse layouts change daily, so hand-coded driving fails. The robot \emph{learns} to
+drive. Learned policies still crash sometimes, more after 8-bit compression for edge chips. The shield stops that.\\
+\textbf{Which RL algorithm?} \textbf{PPO} is deployed. DQN is the baseline. Q-learning/SARSA are the foundation.\\
+\textbf{Which papers?} See section 5: 2 classics, 2 safety, 2 compression, 2 recent.
+
+\hd{2. Why software only (no hardware)}
+\begin{itemize}
+\item RL learns by crashing: PPO needed \textbf{5 million steps}. That's 25 min in simulation vs weeks and broken parts on a real robot.
+\item Fair test: every method gets the \textbf{same 300 unseen warehouses}.
+\item The course is about algorithms. The simulator is still realistic: Gymnasium API, JetBot size (12 cm), 24-beam lidar, unicycle physics.
+\item Exported to ONNX/INT8, the format a Jetson runs. \emph{Limit:} not tested on a real Jetson.
+\end{itemize}
+
+\hd{3. The MDP (draw on board)}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\textbf{State} & 29 numbers: 24 lidar distances + goal distance + $\sin/\cos$ bearing + last action \\
+\textbf{Action} & speed $v\in[0,0.5]$ m/s, turn $\omega\in[-2,2]$ rad/s \\
+\textbf{Transition} & $x{+}{=}v\cos\theta\,\Delta t,\ y{+}{=}v\sin\theta\,\Delta t,\ \theta{+}{=}\omega\Delta t$, $\Delta t=0.1$ s\\
+\textbf{Reward} & $+3\times$progress, $-0.01$/step, small near-obstacle and jerk penalties, \textbf{+10 goal, $-$10 crash}\\
+\textbf{$\gamma$} & 0.99
+\end{tabularx}
+
+\hd{4. Algorithms: ``Q $\to$ D $\to$ P $\to$ S''}
+\textbf{Q --- Q-learning} (tabular TD, off-policy)
+\[Q(s,a)\leftarrow Q(s,a)+\alpha\,[\,r+\gamma\max_{a'}Q(s',a')-Q(s,a)\,]\]
+\A{Say: ``The bracket is the TD error: what I got plus what I expect next, minus what I predicted.''}
+SARSA uses $Q(s',a')$ of the action \emph{actually taken} (on-policy). Result: Q-learning finds the shortest
+route ($-11$, optimal); SARSA takes the safer route (Sutton \& Barto cliff walk). \textit{Problem: a table can't
+hold continuous lidar} $\to$
+
+\textbf{D --- DQN} (deep, value-based)
+\[L=\big(r+\gamma\,Q_{\text{tgt}}(s',\arg\max_{a'}Q(s',a'))-Q(s,a)\big)^2\]
+\textbf{Replay buffer} (random old samples, breaks correlation), \textbf{target net} (stable target),
+\textbf{Double DQN} (online net picks $a'$, target net scores it, which stops over-estimation), \textbf{Dueling}
+($Q=V+A$). 5 discrete moves. 86\% success. \textit{Problem: only discrete moves} $\to$
+
+\textbf{P --- PPO} (actor-critic, \textbf{deployed})
+\[L^{\text{CLIP}}=\mathbb{E}\big[\min(\rho\hat A,\ \text{clip}(\rho,0.8,1.2)\hat A)\big],\quad \rho=\tfrac{\pi_{\text{new}}(a|s)}{\pi_{\text{old}}(a|s)}\]
+Actor outputs a Gaussian over $(v,\omega)$; the critic gives $V(s)$; advantage $\hat A$ from GAE ($\lambda=0.95$).
+\A{Say: ``The clip stops any single update from changing an action's probability by more than 20\%. That keeps
+training stable.''}
+16 parallel envs, 5M steps, \textbf{96\% success}, actor is 26 KB in INT8. \textit{Problem: still crashes 2--3\%} $\to$
+
+\textbf{S --- Shield} (my novelty, \texttt{edgebot/rl/shield.py})
+\begin{enumerate}
+\item The policy proposes $(v,\omega)$.
+\item The lidar scan becomes obstacle points.
+\item Simulate 5 steps (0.5 s) ahead with the unicycle equations.
+\item Too close (radius + 4 cm)? Swap in the nearest safe move. A spin is always safe.
+\end{enumerate}
+
+\hd{Results (300 unseen warehouses)}
+\begin{tabular}{@{}lccc@{}}\toprule
+Policy & Collision off$\to$on & Success off$\to$on & Active\\\midrule
+PPO FP32 & 2.0\%$\to$\textbf{0\%} & 96.0$\to$96.0\% & 5.5\%\\
+PPO INT8 & 3.0\%$\to$\textbf{0\%} & 95.7$\to$97.0\% & 4.6\%\\
+DQN px FP32 & 1.0\%$\to$\textbf{0\%} & 83.7$\to$83.3\% & 7.2\%\\
+DQN px INT8 & 1.3\%$\to$\textbf{0\%} & 47.0$\to$46.3\% & 3.6\%\\\bottomrule
+\end{tabular}\\
+\A{Say: ``Zero crashes for every model, and the shield acts only about 5\% of the time.''}
+\textit{Honest limit:} it stops crashes, not getting lost (timeouts).
+
+\end{multicols}
+\newpage
+{\LARGE\bfseries EdgeBot --- Papers \& Questions}
+\vspace{4pt}
+\begin{multicols}{2}
+\hd{5. Papers: ``2 classics, 2 safety, 2 compression, 2 recent''}
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X@{}}
+\textbf{Classic} & DQN, Mnih et al., \emph{Nature} 2015 \\ & PPO, Schulman et al., 2017\\
+\textbf{Safety} & Shielding, Alshiekh et al., AAAI 2018 \\ & Realizable Continuous Shields, arXiv:2410.02038, 2024 \\
+\textbf{Compress.} & QuaRL, Krishnan et al., TMLR 2022 \\ & Quantized Continuous Controllers, arXiv:2511.07046, 2025\\
+\textbf{Recent} & REASAN, arXiv:2512.09537, 2025 \\ & Lightweight Safe RL for UAV, arXiv:2607.01794, 2026\\
+\end{tabularx}
+\A{My gap: ``Their safety filters need a map, a model or training. Mine needs only the lidar and the robot's
+equations, and I tested it on 8-bit compressed policies.''}
+
+\hd{6. Likely questions}
+\Q{Is the shield really new?}
+\A{Shields exist since 2018. What's new is the combination: map-free, training-free, protecting 8-bit edge
+policies, tested FP32 vs INT8. \emph{To the best of my knowledge}, not done before.}
+\Q{On-policy vs off-policy?}
+\A{On-policy (SARSA, PPO) learns from its own current behaviour. Off-policy (Q-learning, DQN) can reuse old data from a replay buffer.}
+\Q{Why PPO over DQN?}
+\A{Continuous speed and steering, smoother, more successful (96\% vs 86\%), and stable to train.}
+\Q{Why a critic in PPO?}
+\A{To compute the advantage. Subtracting the baseline $V(s)$ lowers gradient variance.}
+\Q{What is GAE $\lambda$?}
+\A{$\lambda=0$: one-step TD (low variance, biased). $\lambda=1$: Monte Carlo (unbiased, noisy). I used 0.95.}
+\Q{Exploration?}
+\A{DQN: $\varepsilon$-greedy, decaying. PPO: samples from its Gaussian, and the learned $\sigma$ shrinks over training.}
+\Q{Why reward progress, not just +10?}
+\A{A sparse reward almost never fires by chance. Rewarding progress gives a learning signal on every step (reward shaping).}
+\Q{Bellman optimality?}
+\A{$Q^*(s,a)=\mathbb{E}[r+\gamma\max_{a'}Q^*(s',a')]$. Q-learning is a sampled version of it.}
+\Q{Why did INT8 hurt the pixel DQN?}
+\A{Dynamic per-tensor scaling crushes small CNN values and flips which action is max. Calibrated static INT8 recovers it (47\%$\to$74\%).}
+\Q{Can the shield fail?}
+\A{Yes: thin poles between lidar beams, moving obstacles, and the 0.5 s horizon. Future work: a denser lidar and motion prediction.}
+\Q{How was evaluation fair?}
+\A{Test seeds start at 1,000,000, so they never overlap training. The same 300 layouts are used for every method.}
+\Q{Sim-to-real?}
+\A{Domain randomisation (noise, friction), then TensorRT on a Jetson. The ONNX files are ready.}
+
+\end{multicols}
+\end{document}
