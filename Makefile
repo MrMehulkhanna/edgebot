@@ -1,6 +1,9 @@
 PY ?= python
 
-.PHONY: install test tabular nav manipulation nlu edge voice demo figures report all
+.PHONY: web install test tabular nav manipulation nlu edge voice demo figures report all
+
+web:
+	$(PY) scripts/web_app.py
 
 install:
 	$(PY) -m pip install -r requirements.txt

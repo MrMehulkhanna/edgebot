@@ -109,6 +109,25 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
+        elif self.path.startswith("/api/snapshot"):
+            import io
+
+            from PIL import Image
+
+            with LOCK:
+                bot = STATE["bot"]
+                bot.sink.compose()
+                frame = bot.sink.frames[-1]
+                bot.sink.frames = bot.sink.frames[-1:]
+            buf = io.BytesIO()
+            Image.fromarray(frame).save(buf, "PNG")
+            data = buf.getvalue()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
         elif self.path == "/api/info":
             self._json({"runtime": STATE["runtime"], "asr": STATE["asr"] is not None,
                         "tts": STATE["tts"] is not None})
@@ -172,12 +191,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:5px;borde
 <main>
 <section>
  <div class="card"><h2>Robot view</h2>
-  <video id="vid" controls muted playsinline></video>
+  <video id="vid" controls muted playsinline poster="/api/snapshot"></video>
+  <p id="vidstate" class="muted"></p>
   <p class="muted">Left: warehouse map (purple = A* route, blue = driven path, red rays = 24-beam lidar). Right: onboard arm.</p>
  </div>
  <div class="card" style="margin-top:16px"><h2>Command the robot</h2>
   <div class="row"><input id="txt" type="text" placeholder="e.g. move the red box from shelf a to the conveyor">
    <button class="pri" id="send">Send</button><button id="mic">🎤 Speak</button></div>
+  <p class="muted" style="margin:10px 0 0">Easy demo order: 1 → 5. (6 shows the robot asking a question; answer "the blue one". 7 builds a tower.)</p>
   <div class="chips" id="chips"></div>
   <label class="switch"><input type="checkbox" id="shield" checked> Lidar safety shield ON (my novelty)</label>
   <div class="row" style="margin-top:10px"><button id="reset">Reset warehouse</button><span id="busy" class="muted"></span></div>
@@ -192,8 +213,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:5px;borde
 </section></main>
 <script>
 const $=id=>document.getElementById(id);
-const EX=["hello jetbot","move the red box from shelf a to the conveyor","pick up the box","the blue one","put it on the packing station","stack the red green and blue blocks at the workbench","what is your status","go back to the charging dock"];
-EX.forEach(t=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{$('txt').value=t;send()};$('chips').appendChild(b)});
+const EX=["hello jetbot","move the red box from shelf a to the conveyor","move the yellow parcel from shelf b to the packing station","what is your status","go back to the charging dock","pick up the box","stack the red green and blue blocks at the workbench"];
+EX.forEach((t,i)=>{const b=document.createElement('button');b.textContent=(i+1)+'. '+t;b.onclick=()=>{$('txt').value=t;send()};$('chips').appendChild(b)});
 function busy(on,msg){document.querySelectorAll('button').forEach(b=>b.disabled=on);$('busy').textContent=on?msg:''}
 const pct=x=>(100*x).toFixed(1)+'%';
 function esc(s){return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
@@ -223,7 +244,12 @@ async function post(url,body,type){const r=await fetch(url,{method:'POST',header
 async function send(){const t=$('txt').value.trim();if(!t)return;busy(true,'Robot working…');
  try{render(await post('/api/command',JSON.stringify({text:t,shield:$('shield').checked})))}catch(e){render({error:e})}busy(false)}
 $('send').onclick=send;$('txt').onkeydown=e=>{if(e.key==='Enter')send()};
-$('reset').onclick=async()=>{busy(true,'Resetting…');await post('/api/reset','{}');$('log').innerHTML='';$('pipe').innerHTML='<b>Status</b><span>Warehouse reset.</span>';busy(false)};
+function snap(){const v=$('vid');v.removeAttribute('src');v.load();v.poster='/api/snapshot?t='+Date.now();$('vidstate').textContent='Current robot view. Waiting for a command.'}
+$('reset').onclick=async()=>{busy(true,'Resetting…');await post('/api/reset','{}');$('log').innerHTML='';$('stat').innerHTML='';$('expout').innerHTML='';
+ $('pipe').innerHTML='<b>Status</b><span>Warehouse reset: all items back on their shelves, robot at the charging dock, battery 100%.</span>';snap();busy(false)};
+snap();
+$('vid').onplaying=()=>$('vidstate').textContent='▶ Playing the robot\'s run…';
+$('vid').onended=()=>$('vidstate').textContent='✔ Run finished. Press ▶ on the video to replay.';
 let rec=null,chunks=[];
 $('mic').onclick=async()=>{
  if(rec){rec.stop();return}

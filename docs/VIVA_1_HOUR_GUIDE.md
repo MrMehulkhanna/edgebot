@@ -5,6 +5,47 @@ Short report: [`project_report.pdf`](project_report.pdf) (12 pages).
 
 ---
 
+## ⭐ Memory cheat sheet (learn this first)
+
+### Start the app (one command)
+```bash
+make web
+```
+Then open **http://localhost:8000** in Chrome.
+
+### 5 commands that always work (after **Reset warehouse**, in this order)
+1. `hello jetbot`
+2. `move the red box from shelf a to the conveyor`
+3. `move the yellow parcel from shelf b to the packing station`
+4. `what is your status`
+5. `go back to the charging dock`
+
+Bonus: `pick up the box` → robot asks "Which colour?" → answer `the blue one`.
+
+### Algorithms: remember **"Q → D → P → S"** (each fixes the one before)
+| Letter | Algorithm | One line | Its problem → next |
+|---|---|---|---|
+| **Q** | Q-learning (and SARSA) | Table of Q(s,a), update with the TD error | Table can't hold continuous lidar → **D** |
+| **D** | DQN | Neural net replaces the table: replay buffer + target net + Double DQN | Only 5 fixed moves → **P** |
+| **P** | **PPO** (used on the robot) | Actor-critic, clipped ratio ±20%, continuous speed + turn | Still crashes sometimes → **S** |
+| **S** | **Shield** (my novelty) | Predict 0.5 s ahead with lidar; block unsafe moves | Collisions → **0%** |
+
+### Papers: remember **"2 classics + 2 safety + 2 compression + 2 recent"**
+| Group | Paper (year) | Why I used it |
+|---|---|---|
+| Classic | **DQN**, Mnih et al., *Nature* (2015) | Value-based deep RL |
+| Classic | **PPO**, Schulman et al. (2017) | My deployed algorithm |
+| Safety | **Shielding**, Alshiekh et al., AAAI (2018) | Original shield idea |
+| Safety | **Realizable Continuous Shields** (2024) | Shields for PPO + lidar, but they need a model |
+| Compression | **QuaRL**, Krishnan et al. (2022) | Quantised RL for edge chips |
+| Compression | **Quantized Continuous Controllers** (2025) | 8-bit RL controllers |
+| Recent | **REASAN** (2025) | Learned safety shield with one lidar |
+| Recent | **Lightweight Safe RL for UAV** (2026) | Safe RL with sparse lidar |
+
+**My gap in one sentence:** "Their safety filters need a map, a model or training. Mine needs only the lidar and the robot's equations, and I tested it on 8-bit compressed policies."
+
+---
+
 ## Study plan (60 min)
 
 | Time | What to learn | Section |
@@ -214,10 +255,7 @@ only the current lidar scan.
 - **What is Bellman optimality?** Q\*(s,a) = E[ r + γ·max_a' Q\*(s',a') ]. Q-learning is a sampled,
   incremental version of this equation.
 
-## 8. Show it working (if asked)
-```bash
-python scripts/eval_shield.py --episodes 60
-```
-```bash
-python scripts/run_demo.py --text "move the red box from shelf A to the conveyor"
-```
+## 8. Show it working
+Run `make web` and open http://localhost:8000. Press **Reset warehouse**, click commands 1 → 5, then press
+**Run on 30 unseen warehouses** to show collisions dropping to 0% with the shield on. Untick the shield box
+to show the same robot running without the novelty.
