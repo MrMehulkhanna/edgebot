@@ -40,7 +40,7 @@
 \centering
 \includegraphics[width=0.8\linewidth]{thapar_logo.png}\par
 \vspace{2cm}
-{\large Project Report\par}
+{\large Project Report (Brief)\par}
 \vspace{0.8cm}
 {\LARGE\bfseries EdgeBot\par}\vspace{0.4cm}{\Large A Voice-Commanded Warehouse Robot\\[4pt] using Reinforcement Learning\par}
 \vspace{2cm}
@@ -64,670 +64,180 @@
 {\large November 2026\par}
 \restoregeometry
 \end{titlepage}
-
-\pagenumbering{roman}
-
-% ---------------------------------------------------------------------
-\chapter*{Declaration}
-\addcontentsline{toc}{chapter}{Declaration}
-I hereby declare that the project titled ``EdgeBot: A Voice-Commanded Warehouse Robot using
-Reinforcement Learning'', submitted for the course UCS760 (Reinforcement Learning) at Thapar Institute of
-Engineering and Technology, Patiala, is my own work done under the guidance of Himika Nikhil. Wherever I
-have used existing models, libraries or published methods, they have been cited in the report.
-
-\vspace{2.5cm}
-\noindent
-\begin{tabular}{@{}l@{}}
-\rule{6cm}{0.4pt}\\
-Mehul Khanna\\
-Roll No.\ 10232334\\
-Date: \rule{3.5cm}{0.4pt}
-\end{tabular}
-
-% ---------------------------------------------------------------------
-\chapter*{Acknowledgement}
-\addcontentsline{toc}{chapter}{Acknowledgement}
-I would like to thank Himika Nikhil for teaching UCS760 and for the guidance given during the semester.
-Most of what went into this project, from MDPs and TD learning to DQN and policy gradients, was first
-covered in the lectures and lab sessions of this course.
-
-I also thank the Department of Computer Science and Engineering, TIET, for the facilities provided, and the
-people who maintain the open-source tools I used, mainly PyTorch, Gymnasium, Hugging Face Transformers,
-ONNX Runtime, faster-whisper and Piper.
-
-\vspace{1.5cm}
-\noindent Mehul Khanna\\
-Roll No.\ 10232334
-
-% ---------------------------------------------------------------------
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
-This project is a simulated warehouse robot, called EdgeBot, that can be controlled by voice. The user
-says something like ``move the red box from shelf A to the conveyor''. The speech is converted to text by
-Whisper, a small BERT-style model extracts the intent and the important words (colour, object, source,
-destination), and the robot then drives to the shelf using a reinforcement learning policy, picks up the
-box with its arm, delivers it and replies by voice.
-
-The main focus is reinforcement learning. I first modelled the warehouse as a small grid MDP and compared
-value iteration, policy iteration, Monte Carlo, SARSA, Expected SARSA, Q-learning, Double Q-learning and
-4-step SARSA on it. For the actual robot I built a continuous navigation environment with lidar and camera
-style observations and trained PPO and DQN agents. The PPO agent that is used in the final system reaches
-the goal in 96\% of 300 warehouse layouts it had not seen during training. The arm completes pick-and-place
-and a three-block stacking task in all 100 test trials. The language model, after distillation from
-DistilBERT, gets 97.6\% of commands fully correct on sentence patterns it was not trained on. Finally, the
-models were exported to ONNX and quantised to INT8 so that they could run on an edge device such as a
-Jetson.
-
-% ---------------------------------------------------------------------
-\tableofcontents
-\listoffigures
-\listoftables
-
-\clearpage
 \pagenumbering{arabic}
+\tableofcontents
 
 % =====================================================================
-\chapter{Introduction}\label{ch:intro}
+\chapter{What the project is, and why it is software only}
 
-\section{Motivation}
-Robots in warehouses have to do three things well: move around shelves and other obstacles without
-crashing, pick up and place items accurately, and understand what the workers want them to do.
-Reinforcement learning methods are usually studied on small separate examples. For the project I wanted
-to see how these ideas hold up when they are put together into one working system, so I picked a
-voice-controlled warehouse robot as the problem.
+\textbf{Problem.} In a warehouse, a worker should be able to \emph{say} ``move the red box from shelf A to
+the conveyor'' and a small robot should do it: drive through clutter without hitting anything, pick the
+box, deliver it and reply. The hard part for reinforcement learning (RL) is the driving: the layout
+changes every day (boxes, pallets, people), so a hand-written path follower is not enough. The robot must
+\emph{learn} a policy that reacts to whatever its lidar sees.
 
-The robot is modelled on the NVIDIA JetBot, a small two-wheeled robot that runs on a Jetson board. Because
-of this I also tried to keep every trained model small enough to run on such a device.
-
-\section{Problem statement}
-Build a voice-controlled warehouse robot in simulation that can understand spoken commands, navigate to
-locations using a learned RL policy, pick and place objects with an arm, and reply to the user by voice.
-
-\section{Objectives}
-\begin{enumerate}
-\item Solve a small warehouse MDP with dynamic programming, Monte Carlo and TD methods and compare them.
-\item Make a continuous navigation environment for the robot and train PPO and DQN agents on it, using
-lidar and also image observations.
-\item Implement forward and inverse kinematics for the arm and use them for pick-and-place and stacking.
-Compare this with an arm controlled by an RL policy.
-\item Train a model for intent detection and slot filling on robot commands.
-\item Connect speech recognition and text-to-speech to make a voice bot.
-\item Export the trained models to ONNX, quantise them and measure speed and accuracy.
-\end{enumerate}
-
-\section{Scope}
-Everything runs in a 2-D simulation: the warehouse, the lidar and a planar 3-joint arm. The speech part
-uses real pretrained ASR and TTS models. Timing results were measured on my laptop (RTX 4050 laptop GPU),
-not on an actual Jetson.
-
-\section{Mapping to the course}
-Table~\ref{tab:syllabus} shows which course topics are used in which part of the project.
-
-\begin{table}[H]
-\centering\small
-\caption{Course topics and where they are used.}\label{tab:syllabus}
-\begin{tabular}{p{4.6cm}p{4.9cm}p{5.0cm}}
-\toprule
-Topic & Code & Experiment \\
-\midrule
-MDPs, Bellman equations, DP & \texttt{envs/warehouse\_grid.py}, \texttt{rl/tabular.py} & Value vs.\ policy iteration (Ch.~\ref{ch:tabular}) \\
-Monte Carlo and TD control & \texttt{rl/tabular.py} & Learning curves over 20 seeds \\
-Gym environments, continuous state spaces & \texttt{envs/jetbot\_nav.py} & Navigation on 300 test layouts (Ch.~\ref{ch:nav}) \\
-DQN, RL from images & \texttt{rl/dqn.py} & DQN from lidar and from pixels \\
-Policy gradients, PPO & \texttt{rl/ppo.py} & Continuous and discrete PPO \\
-Manipulation, IK, control & \texttt{manipulation/arm.py}, \texttt{workcell.py} & IK accuracy, tracking (Ch.~\ref{ch:manip}) \\
-Pick and place, assembly lab & \texttt{Workcell.pick\_and\_place}, \texttt{Workcell.stack} & 100 random trials each \\
-Task learning & \texttt{manipulation/}\allowbreak\texttt{reach\_env.py} & PPO reaching vs.\ IK \\
-BERT, intent and slot filling & \texttt{nlu/} & Unseen sentence patterns (Ch.~\ref{ch:nlu}) \\
-ASR and TTS & \texttt{speech/} & Word error rate, speed (Ch.~\ref{ch:speech}) \\
-Voice bot lab & \texttt{robot/agent.py} & Demo conversation (Ch.~\ref{ch:system}) \\
-Deployment on Jetson & \texttt{edge/export.py} & ONNX, INT8 (Ch.~\ref{ch:edge}) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Report outline}
-Chapter~\ref{ch:background} goes over the theory. Chapter~\ref{ch:arch} explains how the system is put
-together. Chapters~\ref{ch:tabular} to~\ref{ch:edge} cover each part along with its results.
-Chapter~\ref{ch:system} shows the full system working, Chapter~\ref{ch:testing} describes testing, and
-Chapter~\ref{ch:conclusion} has the conclusion and future work.
-
-% =====================================================================
-\chapter{Background}\label{ch:background}
-
-\section{Markov decision processes}
-An MDP is described by states $\mathcal S$, actions $\mathcal A$, transition probabilities
-$p(s',r\,|\,s,a)$ and a discount factor $\gamma$. The agent wants a policy $\pi(a|s)$ that maximises the
-expected return $G_t=\sum_{k\ge0}\gamma^k R_{t+k+1}$. The optimal value functions satisfy the Bellman
-optimality equations:
-\begin{gather*}
-v_*(s)=\max_a\sum_{s',r}p(s',r\,|\,s,a)\,\big[r+\gamma v_*(s')\big],\\
-q_*(s,a)=\sum_{s',r}p(s',r\,|\,s,a)\,\big[r+\gamma\max_{a'}q_*(s',a')\big].
-\end{gather*}
-
-\section{Dynamic programming}
-If the model is known, we can find $v_\pi$ by repeatedly applying the Bellman expectation equation
-(policy evaluation) and then make the policy greedy with respect to it (policy improvement). Repeating
-these two steps is policy iteration. Value iteration combines them by doing only one sweep of evaluation
-with a max over actions each time.
-
-\section{Monte Carlo and TD learning}
-When the model is not known, the agent has to learn from experience. Monte Carlo methods wait until the end
-of the episode and update towards the actual return. TD methods update after each step using the current
-estimate of the next state:
-\[
-V(S_t)\leftarrow V(S_t)+\alpha\big[R_{t+1}+\gamma V(S_{t+1})-V(S_t)\big].
-\]
-For control I used the following methods:
+\textbf{Why software (simulation) and not hardware.} I built and tested everything in simulation, on purpose:
 \begin{itemize}
-\item SARSA, which is on-policy and uses the next action that is actually taken.
-\item Q-learning, which is off-policy and uses $\max_a Q(S_{t+1},a)$ as the target.
-\item Expected SARSA, which uses the expected value over the policy instead of a sampled action.
-\item Double Q-learning, which keeps two Q tables to reduce the overestimation caused by the max.
-\item $n$-step SARSA, which waits $n$ steps before bootstrapping.
+\item \textbf{RL needs millions of trials and crashes.} The PPO policy needed 5 million steps and
+thousands of collisions to learn. On a real robot that is weeks of driving and broken hardware; in my
+NumPy simulator it is 25 minutes on a laptop.
+\item \textbf{Fair, repeatable evaluation.} Every algorithm is tested on the \emph{same} 300 unseen random
+warehouses, with fixed seeds. A real floor cannot be reset to the same state 300 times.
+\item \textbf{The software is the course content.} MDPs, TD learning, DQN and PPO are algorithms; the
+syllabus does not require a robot. The simulator follows the standard Gymnasium API with a real JetBot
+footprint, a 24-beam lidar and unicycle kinematics, so the same policy can be moved to a robot.
+\item \textbf{Edge-ready anyway.} Trained policies are exported to ONNX and INT8, the format a Jetson
+runs. I measured latency on a laptop CPU, not on a Jetson; that is stated honestly as a limitation.
 \end{itemize}
 
-\section{Deep RL}
-For large or continuous state spaces a neural network is used to approximate the value function. DQN
-does this with an experience replay buffer and a separate target network. Double DQN uses the online
-network to choose the next action and the target network to evaluate it,
-\[
-y=r+\gamma\,Q_{\bar\theta}\big(s',\arg\max\nolimits_a Q_\theta(s',a)\big),
-\]
-and the dueling architecture splits the network output into a state value $V(s)$ and advantages $A(s,a)$.
-
-\section{Policy gradients and PPO}
-Policy gradient methods learn the policy directly. PPO limits how much the policy can change in one update
-by clipping the probability ratio:
-\[
-L^{\text{CLIP}}(\theta)=\mathbb{E}_t\Big[\min\big(\rho_t\hat A_t,\ \mathrm{clip}(\rho_t,1-\epsilon,1+\epsilon)\,\hat A_t\big)\Big],
-\qquad\rho_t=\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_\text{old}}(a_t|s_t)}.
-\]
-The advantages $\hat A_t$ are computed with GAE. For continuous actions the policy outputs the mean of a
-Gaussian distribution.
-
-\section{Arm kinematics}
-Forward kinematics gives the gripper position from the joint angles by multiplying the Denavit--Hartenberg
-transforms of each link. Inverse kinematics does the opposite. It can be solved in closed form for simple
-arms, or numerically using the Jacobian $J(q)$, for example with damped least squares
-$\Delta q=J^\top(JJ^\top+\lambda^2I)^{-1}e$.
-
-\section{Language understanding and speech}
-To act on a command the robot needs its intent (for example \emph{pick}) and its slots (for example
-colour = red, object = box). Intent detection is a sentence classification problem and slot filling is a
-token classification problem. JointBERT does both with one BERT encoder. Knowledge distillation trains a
-small student model to copy the softened outputs of a large teacher model. ASR converts speech to text and
-TTS converts text back to speech.
-
-% =====================================================================
-\chapter{System Design}\label{ch:arch}
-
-\section{Overview}
-Figure~\ref{fig:arch} shows how the parts are connected. The speech is converted to text, the NLU model
-turns the text into a frame (intent and slots), the dialogue manager checks it against what the robot
-currently knows (for example, whether the box is actually on that shelf), and the task planner turns it
-into steps like ``go to shelf A'', ``pick'', ``go to conveyor'', ``place''.
-
-\begin{figure}[H]
-\centering
-\begin{adjustbox}{max width=\linewidth}
-\begin{tikzpicture}[node distance=0.55cm and 0.5cm, every node/.style={font=\small},
-  box/.style={draw, align=center, minimum height=0.95cm, text width=2.35cm},
-  arr/.style={-{Stealth[length=2mm]}}]
-\node[box] (mic) {Speech input};
-\node[box, right=of mic] (asr) {ASR\\ (Whisper)};
-\node[box, right=of asr] (nlu) {NLU\\ (JointBERT-mini)};
-\node[box, right=of nlu] (dm) {Dialogue manager};
-\node[box, below=1.0cm of dm] (plan) {Task planner};
-\node[box, left=of plan] (nav) {Navigation\\ (A* + PPO)};
-\node[box, left=of nav] (man) {Arm control\\ (IK + PD)};
-\node[box, left=of man] (tts) {TTS\\ (Piper)};
-\node[box, below=0.9cm of nav, text width=6.2cm] (sim) {Simulated warehouse with lidar and arm};
-\draw[arr] (mic) -- (asr); \draw[arr] (asr) -- (nlu);
-\draw[arr] (nlu) -- (dm); \draw[arr] (dm) -- (plan);
-\draw[arr] (plan) -- (nav); \draw[arr] (nav) -- (man);
-\draw[arr] (man) -- (tts);
-\draw[arr, <->] (nav) -- (sim); \draw[arr, <->] (man.south) |- (sim.west);
+\textbf{Pipeline (one sentence per box).}
+\begin{center}
+\begin{tikzpicture}[node distance=4mm, every node/.style={draw, rounded corners, align=center, font=\small, minimum height=8mm}]
+\node (asr) {Speech\\Whisper};
+\node (nlu) [right=of asr] {NLU\\intent + slots};
+\node (plan) [right=of nlu] {A* route\\(waypoints)};
+\node (rl) [right=of plan, fill=blue!10] {\textbf{PPO policy}\\lidar $\to$ $(v,\omega)$};
+\node (sh) [right=of rl, fill=orange!20] {\textbf{Shield}\\(novelty)};
+\node (arm) [below=8mm of sh] {Arm IK\\pick / place};
+\node (tts) [left=of arm] {Spoken\\reply (TTS)};
+\draw[-{Latex}] (asr)--(nlu); \draw[-{Latex}] (nlu)--(plan); \draw[-{Latex}] (plan)--(rl);
+\draw[-{Latex}] (rl)--(sh); \draw[-{Latex}] (sh)--(arm); \draw[-{Latex}] (arm)--(tts);
 \end{tikzpicture}
-\end{adjustbox}
-\caption{Block diagram of EdgeBot.}
-\label{fig:arch}
-\end{figure}
-
-For navigation, an A* planner finds a path on the known map and gives the robot a series of waypoints. The
-PPO policy drives between these waypoints and uses its lidar to avoid obstacles that are not on the map.
-For the arm I used normal inverse kinematics instead of RL, because the arm's geometry is known exactly
-and IK gives an exact answer. I still trained an RL agent for arm reaching (Section~\ref{sec:reach}) to
-compare the two approaches.
-
-\section{Tools used}
-\begin{table}[H]
-\centering\small
-\caption{Software used in the project.}\label{tab:stack}
-\begin{tabular}{p{4cm}p{10.4cm}}
-\toprule
-Purpose & Tools \\
-\midrule
-Programming & Python 3.10, NumPy \\
-Training & PyTorch, Hugging Face Transformers \\
-Environments & Gymnasium API (custom environments) \\
-Speech & faster-whisper (Whisper-base), Piper TTS \\
-Deployment & ONNX, ONNX Runtime, INT8 quantisation \\
-Plots and report & Matplotlib, \LaTeX \\
-Testing & pytest \\
-Hardware & Laptop with RTX 4050 laptop GPU \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Code structure}
-\begin{lstlisting}
-edgebot/
-  envs/          grid MDP and JetBot navigation environment
-  rl/            tabular methods, DQN, PPO, networks
-  manipulation/  kinematics, IK, trajectories, arm control, reaching env
-  nlu/           dataset generator, JointBERT models, distillation
-  speech/        ASR and TTS wrappers
-  edge/          ONNX export and quantisation
-  robot/         warehouse map, A* planner, dialogue manager
-scripts/         training, evaluation and demo scripts
-tests/           unit tests
-results/         saved metrics, figures, demo video and audio
-\end{lstlisting}
-The code is available at \url{https://github.com/MrMehulkhanna/edgebot}.
+\end{center}
+The RL part, which is the subject of this report, is the blue and orange boxes. Speech, language and the
+arm use standard pre-built methods and are summarised in one page (Chapter~\ref{ch:rest}).
 
 % =====================================================================
-\chapter{Tabular RL on a Warehouse Grid}\label{ch:tabular}
-
-\section{Environment}
-The warehouse is a $5\times10$ grid. The robot starts at the loading bay $S$ and has to reach the packing
-station $G$. It can move up, down, left or right, and gets $-1$ for each step. Some cells are shelves and
-cannot be entered. There is an oil spill along the shortest route: stepping on it gives $-100$ and sends the
-robot back to the start. This is basically the Cliff Walking example from Sutton and Barto
-(Example~6.6) set in a warehouse. I also added a ``slippery floor'' version, where with probability $p$ the
-robot slides sideways instead of moving where it intended.
-
-\section{Dynamic programming}
-Value iteration and policy iteration gave the same value function (the difference was below $10^{-8}$),
-as shown in Table~\ref{tab:dp}. On the normal floor the best route goes right next to the spill and takes
-11 steps. On the slippery floor the best policy keeps one row away from the spill, since slipping into it is
-very costly (Fig.~\ref{fig:dp}). Policy iteration needed only 8 iterations on the slippery floors compared
-to 47 to 178 sweeps for value iteration, although each of its iterations takes longer.
-
-\begin{table}[H]\centering\small\caption{Dynamic programming results.}\label{tab:dp}
-\fit{tab_dp}\end{table}
-\begin{figure}[H]\centering\includegraphics[width=0.95\linewidth]{dp_value_policy.png}
-\caption{Optimal value function and policy. Dark cells are the oil spill and brown cells are shelves.}\label{fig:dp}\end{figure}
-
-\section{Model-free control}
-Each method was run with 20 different random seeds and $\epsilon=0.1$ exploration, for 500 episodes
-(2000 for Monte Carlo since it learns slower). I used $\alpha=0.5$ for the one-step methods and
-$\alpha=0.1$ for 4-step SARSA. Results are in Table~\ref{tab:control} and Fig.~\ref{fig:tab}.
-
-The most interesting result is the difference between SARSA and Q-learning. Q-learning learns the optimal
-11-step path next to the spill, but because it keeps exploring it falls into the spill often during
-training, so its reward while learning is low. SARSA takes the exploration into account and learns a
-safer 17-step path further from the spill, which gives it a better reward during training. This is the same
-behaviour shown in Figure~6.4 of Sutton and Barto.
-
-Expected SARSA got the best online return, since it does not depend on a randomly sampled next action.
-Monte Carlo was the slowest, because the $-100$ penalty makes the returns vary a lot between episodes and
-it can only update after each episode ends.
-
-\begin{table}[H]\centering\small\caption{Model-free control (20 runs, 500 episodes; MC 2000).}\label{tab:control}
-\fit{tab_control}\end{table}
-\begin{figure}[H]\centering
-\begin{subfigure}{0.6\linewidth}\includegraphics[width=\linewidth]{tabular_learning_curves.png}\end{subfigure}
-\begin{subfigure}{0.39\linewidth}\includegraphics[width=\linewidth]{td0_prediction.png}\end{subfigure}
-\caption{Left: learning curves. Right: TD(0) prediction error compared to the true values from DP, for
-different step sizes.}\label{fig:tab}\end{figure}
-
-% =====================================================================
-\chapter{Deep RL for Robot Navigation}\label{ch:nav}
-
-\section{Environment}
-I wrote the navigation environment using the Gymnasium API. The robot is a circle of radius 0.12\,m that
-moves like a differential-drive robot: it controls its forward speed $v\in[0,0.5]$\,m/s and turning rate
-$\omega\in[-2,2]$\,rad/s, and the simulation runs at 10\,Hz. Every episode creates a new random warehouse
-with up to 4 shelves and 1 to 7 round obstacles, and a goal 1 to 5.5\,m away. Since the layout is new every
-time, the agent cannot memorise it and has to actually learn to avoid obstacles.
-
-The agent can observe the world in two ways:
+\chapter{The RL problem as an MDP}
+The robot's driving task is a Markov Decision Process $(S, A, P, R, \gamma)$:
 \begin{itemize}
-\item Lidar: 24 distance readings around the robot, plus the distance and direction to the goal and the
-previous action (29 numbers in total).
-\item Image: a $64\times64$ top-down image centred on the robot, showing obstacles and the goal. This was
-used to test RL from pixels.
+\item \textbf{State $s$} (29 numbers): 24 lidar distances, distance and bearing (as $\sin,\cos$) to the
+next waypoint, and the previous action.
+\item \textbf{Action $a$}: linear speed $v\in[0,0.5]$ m/s and turn rate $\omega\in[-2,2]$ rad/s.
+\item \textbf{Transition $P$}: unicycle kinematics, $x' = x + v\cos\theta\,\Delta t$,
+$y' = y + v\sin\theta\,\Delta t$, $\theta' = \theta+\omega\,\Delta t$, with $\Delta t=0.1$ s.
+\item \textbf{Reward $R$}: $+3\times$(progress toward goal) $-0.01$ per step, small penalty for being near
+obstacles and for jerky turning, $+10$ for reaching the goal, $-10$ for a collision (episode ends).
+\item \textbf{Discount} $\gamma=0.99$. Goal: learn $\pi(a\mid s)$ that maximises
+$\mathbb{E}\big[\sum_t \gamma^t r_t\big]$.
 \end{itemize}
 
-The reward gives points for getting closer to the goal, small penalties for each step, for going close to
-obstacles and for turning sharply, $+10$ for reaching the goal and $-10$ for a collision (which also ends
-the episode).
+% =====================================================================
+\chapter{The three RL algorithms (all from the syllabus)}
+I explain only three algorithms. Each one leads to the next.
 
-\section{Training setup}
-For PPO I used a network with two hidden layers of 128 units and 16 environments running in parallel. For
-DQN I used Double DQN with a dueling head and a replay buffer. The image version uses the CNN from the
-original DQN paper. Table~\ref{tab:hparams} lists the settings.
+\section{Q-learning (tabular TD control) --- the foundation}
+On a small grid version of the warehouse (each cell a state, 4 moves), the agent keeps a table $Q(s,a)$
+and updates it after every step:
+\[ Q(s,a) \leftarrow Q(s,a) + \alpha\big[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\big]. \]
+The bracket is the \emph{TD error}: what I got plus what I expect next, minus what I predicted. It is
+\textbf{off-policy}: it learns the greedy policy while exploring with $\varepsilon$-greedy.
+\textbf{SARSA} uses $Q(s',a')$ of the action actually taken instead of the max, so it is
+\textbf{on-policy}. Result: on a floor with an oil spill, Q-learning finds the shortest route along the
+edge (return $-11$, optimal) while SARSA learns a safer route further away --- the classic
+Sutton~\&~Barto cliff-walking result~\cite{sutton}. Value iteration (Dynamic Programming) gives the exact
+answer and both match it.
 
-\begin{table}[H]\centering\small\caption{Hyperparameters.}\label{tab:hparams}
-\begin{tabular}{p{3.3cm}p{5.4cm}p{5.4cm}}
-\toprule
-Setting & PPO & DQN \\
-\midrule
-Discount $\gamma$ & 0.99 & 0.99 \\
-Learning rate & $3\times10^{-4}$, decayed linearly & $5\times10^{-4}$ (lidar), $2.5\times10^{-4}$ (image) \\
-Parallel envs & 16 & 8 \\
-Batch & 256 steps per env, minibatch 1024 & 256 \\
-Updates & 10 epochs per batch & 2 gradient steps per env step \\
-Other & clip 0.2, GAE $\lambda=0.95$ & buffer 300k (lidar) / 100k (image), target update every 2000 steps \\
-Exploration & Gaussian policy & $\epsilon$ from 1.0 to 0.03 \\
-Network & MLP $128\times128$ & MLP $256\times256$ / CNN \\
-\bottomrule
-\end{tabular}
-\end{table}
+\textbf{Limit:} a table cannot hold a continuous 29-D lidar state. So we approximate $Q$ with a network.
 
-\section{Results}
-All agents were tested on 300 layouts that were generated with different seeds from the training layouts
-(Table~\ref{tab:nav}). Path efficiency is the straight-line distance to the goal divided by the distance
-actually driven.
+\section{DQN (deep Q-network) --- value-based deep RL}
+DQN~\cite{dqn} replaces the table by a neural network $Q_\phi(s,a)$ and minimises
+\[ L(\phi)=\big(r+\gamma\, Q_{\bar\phi}(s',\arg\max_{a'}Q_\phi(s',a')) - Q_\phi(s,a)\big)^2 .\]
+Three tricks make it stable: a \textbf{replay buffer} (train on random old transitions, breaking
+correlation), a \textbf{target network} $Q_{\bar\phi}$ (slowly updated copy), and \textbf{Double DQN}
+(choose $a'$ with the online net, evaluate it with the target net, which reduces over-estimation)~\cite{ddqn}.
+I use 5 discrete motions (forward, forward-left, forward-right, spin left, spin right), from lidar and also
+from a $64\times64$ top-down image with a CNN (``RL for vision'' in the syllabus).
 
-\begin{table}[H]\centering\small\caption{Navigation results on 300 test layouts.}\label{tab:nav}
-\fit{tab_nav}\end{table}
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{nav_learning_curves.png}
-\caption{Training curves (average over the last 100 episodes).}\label{fig:navcurves}\end{figure}
-\begin{figure}[H]\centering\includegraphics[width=0.8\linewidth]{nav_eval_bars.png}
-\caption{Success, collision and timeout rates on the test layouts.}\label{fig:navbars}\end{figure}
-\begin{figure}[H]\centering\includegraphics[width=0.9\linewidth]{nav_trajectories.png}
-\caption{Paths taken by the PPO agent on some test layouts.}\label{fig:traj}\end{figure}
+\textbf{Limit:} DQN needs discrete actions; real motors take continuous speeds.
 
-PPO with continuous actions worked best overall, with 96\% success and the most direct paths, so I used it
-in the final robot. PPO with discrete actions had a similar success rate but its paths were less efficient
-because it can only turn in fixed steps. DQN with lidar collided more often (10\%). DQN from images was able
-to learn the task, which shows that RL from camera-like input works here, but it timed out in 15\% of the
-episodes.
+\section{PPO (proximal policy optimisation) --- the deployed policy}
+PPO~\cite{ppo} is a policy-gradient \emph{actor-critic} method. The actor outputs a Gaussian over
+$(v,\omega)$; the critic estimates $V(s)$. The advantage $\hat A_t$ (how much better an action was than
+average) is computed with GAE~\cite{gae}. PPO maximises the \emph{clipped} objective
+\[ L^{\text{CLIP}}=\mathbb{E}_t\Big[\min\big(\rho_t \hat A_t,\ \text{clip}(\rho_t,1-\epsilon,1+\epsilon)\hat A_t\big)\Big],
+\qquad \rho_t=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\text{old}}(a_t\mid s_t)},\ \epsilon=0.2 .\]
+The clip stops one update from changing the policy too much --- that is the whole idea of PPO. I train
+with 16 parallel environments for 5M steps.
+
+\section{Results on 300 unseen warehouses}
+\begin{center}\fit{tab_nav}\end{center}
+PPO (continuous) is deployed: 96\% success, smooth, continuous control. DQN is the value-based baseline.
 
 % =====================================================================
-\chapter{Robot Arm}\label{ch:manip}
+\chapter{Novelty: a lidar safety shield that also protects quantised (INT8) policies}
+\label{ch:novel}
 
-\section{Kinematics}
-The arm has three rotating joints in a vertical plane, with link lengths 0.35, 0.30 and 0.12\,m, and a
-two-finger gripper. Forward kinematics uses DH parameters. For inverse kinematics I first remove the last
-link (since the gripper should point down), then solve the remaining two-link arm using the cosine rule:
-\[\cos q_2=\frac{w_x^2+w_z^2-L_1^2-L_2^2}{2L_1L_2}\]
-and finally $q_3=\phi-q_1-q_2$. I also implemented numerical IK with damped least squares to compare.
+\textbf{The gap.} Recent work shows two separate things. (1) Compressing RL policies to INT8 for edge
+hardware can silently change their actions and hurt them~\cite{quarl,quantprune2024,quantctrl2025}.
+(2) \emph{Shields} --- filters that block unsafe actions --- make RL safer~\cite{alshiekh,realizable2024,
+reasan2025,uavsafe2026}. But shields are usually built from a known model/map or are learned networks
+themselves, and they are studied on full-precision policies. I did not find work that uses a
+\textbf{map-free, training-free kinematic lidar shield as a safety net for quantised edge RL policies},
+inside a voice-commanded pipeline, and measures the effect FP32 vs INT8 side by side.
 
-\begin{table}[H]\centering\small\caption{Comparison of IK methods on 2000 random targets.}\label{tab:ik}
-\fit{tab_ik}\end{table}
-
-The closed-form solution is exact and about 100 times faster. The numerical method sometimes got stuck at a
-joint limit because it always starts from the same initial configuration, so I used the closed-form
-solution in the robot.
-
-\section{Motion and control}
-The arm moves along smooth (minimum-jerk) joint trajectories, and moves in straight lines when going down
-to grab or release an object. Each joint is simulated with inertia, friction, gravity and torque limits, and
-is controlled by a PD controller with gravity compensation. The tracking error was below $0.2^\circ$
-(Fig.~\ref{fig:tracking}).
-
-\section{Pick-and-place and stacking}
-The gripper only grabs a block if it is within 12\,mm of the right position when it closes, and released
-blocks fall onto whatever is below them. So success is decided by the simulation, not assumed. For
-pick-and-place, a block is moved between random positions on the table. For stacking, three blocks are
-placed in random positions and stacked in a random colour order. Both worked in all 100 trials
-(Table~\ref{tab:manip}).
-
-I also added random noise to the joint angle readings to see how accurate the sensors need to be. The arm
-still worked in every trial with $1^\circ$ of noise. At $2^\circ$ stacking success dropped to 88\%, and at
-$4^\circ$ pick-and-place fell to 50\% and stacking to 12\% (Fig.~\ref{fig:manip}).
-
-\begin{table}[H]\centering\small\caption{Arm task results.}\label{tab:manip}
-\fit{tab_manip}\end{table}
-\begin{figure}[H]\centering\includegraphics[width=0.95\linewidth]{manipulation_analysis.png}
-\caption{Left: manipulability of the arm over the workspace. Right: success rate vs.\ sensor noise.}\label{fig:manip}\end{figure}
-\begin{figure}[H]\centering\includegraphics[width=0.85\linewidth]{joint_tracking.png}
-\caption{Joint angles and torques during pick-and-place and stacking.}\label{fig:tracking}\end{figure}
-
-\section{Arm reaching with RL}\label{sec:reach}
-To compare with IK, I trained a PPO agent to move the gripper to random targets by controlling the joint
-speeds. It reached the target in all 500 test cases in under half a second, but the final error was about
-5\,mm, while IK is exact. This supports the choice of using RL for navigation, where obstacles are
-unknown, and plain IK for the arm, where the geometry is known.
-
-% =====================================================================
-\chapter{Understanding Commands}\label{ch:nlu}
-
-\section{Data}
-The robot understands nine intents: navigate, pick, place, pick\_place, stack, stop, status, greet and
-help. The slots are colour, object, source and destination, labelled with BIO tags. Since there was no
-existing dataset for this, I wrote 279 sentence templates and filled them with 6 colours, 7 object types and
-8 locations. I also added noisy versions of sentences to imitate speech recognition mistakes, for example
-``read'' instead of ``red'' or ``self'' instead of ``shelf''.
-
-To make the test fair, I split the templates into train and test sets before generating sentences. This
-means the test set only has sentence patterns the model has never seen.
-
-\section{Models}
-I compared four models:
+\textbf{My method (\texttt{edgebot/rl/shield.py}, $\sim$60 lines).} At every control step:
 \begin{enumerate}
-\item A bag-of-words logistic regression baseline (intent only).
-\item JointBERT-mini: a small 2-layer Transformer trained from scratch. Each word is represented by a word
-embedding together with character-level features, so it can handle misspelt or unknown words.
-\item JointBERT using pretrained DistilBERT (66\,M parameters), fine-tuned on the data.
-\item JointBERT-mini distilled from the DistilBERT model. To give the student more data, I created about
-43,000 extra sentences by replacing some words using DistilBERT's masked word predictions, labelled them
-with the teacher, and trained the student on both the teacher's outputs and the true labels.
+\item The (FP32 or INT8) policy proposes an action $(v,\omega)$.
+\item The shield converts the current lidar scan into obstacle points around the robot.
+\item It simulates the next $H=5$ steps (0.5 s) with the unicycle model, holding that action.
+\item If any predicted position is closer than robot radius $+\,4$ cm to an obstacle point, the action is
+\emph{unsafe}: replace it by the nearest safe candidate (forward / turn / slow / spin). A pure spin never
+moves the robot, so a safe action always exists.
 \end{enumerate}
+It needs no map, no retraining and no extra network, so it costs almost nothing on an edge device, and it
+is written once and works for any policy (PPO or DQN, FP32 or INT8).
 
-\section{Results}
-\begin{table}[H]\centering\small\caption{NLU results on unseen sentence patterns.}\label{tab:nlu}
-\fit{tab_nlu}\end{table}
-\begin{figure}[H]\centering
-\begin{subfigure}{0.58\linewidth}\includegraphics[width=\linewidth]{nlu_comparison.png}\end{subfigure}
-\begin{subfigure}{0.41\linewidth}\includegraphics[width=\linewidth]{nlu_confusion.png}\end{subfigure}
-\caption{Left: intent accuracy of each model. Right: confusion matrix of the distilled model.}\label{fig:nlu}\end{figure}
-
-The small model trained from scratch was only slightly better than the bag-of-words baseline on new
-sentence patterns, since it only knows the words in the training data. The pretrained DistilBERT model was
-almost perfect. After distillation the small model went from 91.4\% to 97.6\% frame accuracy, while being
-more than 100 times smaller than DistilBERT. This is the model used on the robot.
+\textbf{Result} (same 300 unseen layouts, \texttt{scripts/eval\_shield.py}):
+\begin{center}\fit{tab_shield}\end{center}
+\textbf{Reading the table.} With the shield, collisions fall to \textbf{0\%} for every model, including the
+INT8 ones, while the shield only steps in on 4--7\% of control steps. Success stays within about one point
+of the unshielded policy (PPO INT8 even improves, 95.7\%$\to$97.0\%): a few episodes that used to end in a
+crash now end in a timeout instead, which on a real robot is the safe way to fail. The honest limit: the shield prevents \emph{crashes}, not \emph{getting lost}. The badly
+quantised pixel DQN mostly fails by timing out (dithering), which a safety filter cannot fix; better
+quantisation (calibrated static INT8) is what fixes that.
 
 % =====================================================================
-\chapter{Speech}\label{ch:speech}
-
-\section{Speech recognition}
-In class we covered CTC-based ASR models like Jasper and QuartzNet. For this project I used Whisper-base,
-since it is easy to run and works well out of the box. It runs through the faster-whisper library, in FP16
-on the GPU or INT8 on the CPU. I give it a short prompt with warehouse words so it recognises terms like
-``conveyor'' and ``shelf'' more reliably.
-
-\section{Text to speech}
-For TTS I used Piper, which is based on VITS. Unlike Tacotron2 with WaveGlow, it generates audio in a
-single model and is fast enough on a CPU.
-
-\section{Testing the full speech pipeline}
-I took 150 test commands, converted them to speech using the TTS voice, optionally added noise, and then
-passed them through ASR and NLU. Since the audio is synthetic and from one voice, this is easier than real
-speech, but the sentences still use patterns the NLU has never seen.
-
-\begin{table}[H]\centering\small\caption{Results on 150 spoken test commands.}\label{tab:voice}
-\fit{tab_voice}\end{table}
-\begin{table}[H]\centering\small\caption{Speed of the speech models (real-time factor is processing time divided by audio length).}\label{tab:rtf}
-\fit{tab_speech_rtf}\end{table}
-
-Even with noise at 10\,dB SNR, the word error rate stayed under 8\% and 91\% of commands were understood
-completely. Both ASR and TTS run faster than real time on the CPU.
-
-% =====================================================================
-\chapter{Deployment on Edge Devices}\label{ch:edge}
-
-\section{Export and quantisation}
-The robot runs its models one input at a time, and the models are small, so a GPU does not help much.
-I exported the PPO policy, the image-based DQN and the NLU model to ONNX and checked that their outputs
-match PyTorch. Then I quantised them to INT8. ONNX files can be run with ONNX Runtime on ARM CPUs or
-converted to TensorRT on a Jetson. All timings below are from one CPU thread on my laptop.
-
-\begin{table}[H]\centering\small\caption{Model size and time per inference.}\label{tab:edge}
-\fit{tab_edge}\end{table}
-\begin{table}[H]\centering\small\caption{Accuracy before and after INT8 quantisation.}\label{tab:quant}
-\fit{tab_quant}\end{table}
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{edge_benchmark.png}
-\caption{Latency and model size.}\label{fig:edge}\end{figure}
-
-\section{Observations}
-ONNX Runtime was faster than PyTorch for all three models. The GPU was actually slower than the CPU for
-the PPO policy, because for such a tiny network the time to launch GPU work is more than the computation
-itself. INT8 made the models 3 to 4 times smaller. It did not make them faster on my laptop CPU, but it does
-reduce memory, which matters on small devices. The PPO policy and the NLU model kept their accuracy after
-quantisation.
-
-\section{Problem with the image-based DQN}
-The image-based DQN dropped from 81\% to 42\% success after simple INT8 quantisation. The reason is that
-DQN chooses the action with the highest Q-value, and the differences between Q-values are small, so small
-rounding errors can change the chosen action. I tried two fixes (Table~\ref{tab:dqnq}). Using a separate
-scale for each channel brought it up to 65\%, and static quantisation calibrated on 1,167 real observations
-brought it to 74\%, which was also the fastest version.
-
-\begin{table}[H]\centering\small\caption{INT8 quantisation of the image-based DQN.}\label{tab:dqnq}
-\fit{tab_dqn_quant}\end{table}
-
-% =====================================================================
-\chapter{Full System Demo}\label{ch:system}
-
-\section{Demo run}
-The script \texttt{scripts/run\_demo.py --voice} runs an eight-step conversation with the robot using the
-exported models. Each command is turned into audio and passed through ASR, so the whole voice pipeline is
-used even without a microphone (a \texttt{--mic} option is also available). The run is saved as a video;
-one frame is shown in Fig.~\ref{fig:demo}.
-
-\begin{figure}[H]\centering\includegraphics[width=\linewidth]{demo_frame.png}
-\caption{Frame from the demo video, showing the map with the planned path and lidar, the arm, and the
-conversation.}\label{fig:demo}\end{figure}
-
-Table~\ref{tab:dialogue} shows what the ASR heard and how the robot replied. During this run the robot
-reached its destination in all 6 navigation tasks without any collision, did 2 picks and 2 places
-without failure, and drove 19.4\,m in total.
-
-\begin{table}[H]\centering\small
-\caption{Demo conversation.}\label{tab:dialogue}
-\begin{tabular}{p{0.5cm}p{5.0cm}p{8.4cm}}
-\toprule
-No. & User (ASR output) & Robot reply \\
-\midrule
-1 & Hello JetBot. & Hello! I am EdgeBot, your warehouse assistant. How can I help? \\
-2 & Move the red box from shelf A to the conveyor. & Picked up the red box from the shelf A. Delivered the red box to the conveyor. \\
-3 & Pick up the box. & Which colour item should I pick up? \\
-4 & The blue one. & Picked up the blue crate from the shelf B. \\
-5 & Put it on the packing station. & Delivered the blue crate to the packing station. \\
-6 & Stack the red, green and blue blocks at the workbench. & Built a tower of red, green, blue blocks at the workbench, bottom to top. \\
-7 & What is your status? & I am at the workbench, not carrying anything. Battery at 77 percent, 15.1 metres travelled. Last task: stacking red, green, blue at the workbench. \\
-8 & Go back to the charging dock. & Arrived at the charging dock. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Dialogue manager}
-In step 3 the colour is missing, so the robot asks which one. It remembers the unfinished request, and when
-the user says ``the blue one'' it fills in the colour and continues. In step 5, ``it'' refers to the object
-the robot is carrying. The dialogue manager also asks the user to repeat if the NLU is not confident,
-checks that the requested item actually exists at that location, does not try to pick something while
-already holding an item, and tells the user if a task fails.
-
-% =====================================================================
-\chapter{Testing}\label{ch:testing}
-
-\section{Unit tests}
-The project has 18 unit tests written with pytest. They check the grid MDP, the DP and TD code, the lidar
-and collision checks, the A* planner, the arm kinematics (including checking the Jacobian against a
-numerical derivative), pick-and-place, stacking, the NLU data and the dialogue manager.
-
-\section{Reproducing results}
-Every script saves its results as JSON in the \texttt{results/} folder, and the tables in this report are
-generated directly from those files. \texttt{make all} runs everything from the start.
-
-\begin{table}[H]\centering\small\caption{Commands and approximate run times on my laptop.}\label{tab:repro}
-\begin{tabular}{p{4.2cm}p{8.2cm}r}
-\toprule
-Step & Command & Time \\
-\midrule
-Tabular RL & \texttt{python scripts/run\_tabular.py --runs 20} & 3 min \\
-PPO navigation & \texttt{python scripts/train\_nav\_ppo.py --steps 5000000} & 25 min \\
-PPO discrete & \texttt{... --steps 3000000 --action discrete} & 18 min \\
-DQN lidar / image & \texttt{python scripts/train\_nav\_dqn.py --obs lidar|pixels} & 37 / 42 min \\
-Arm tasks & \texttt{python scripts/run\_manipulation.py --trials 100} & 4 min \\
-RL reaching & \texttt{python scripts/train\_arm\_reach.py} & 12 min \\
-NLU models & \texttt{python scripts/train\_nlu.py} & 40 min \\
-Export and benchmark & \texttt{python scripts/export\_edge.py} & 5 min \\
-Speech test & \texttt{python scripts/eval\_voice.py --n 150} & 4 min \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\noindent To run the demo:
-\begin{lstlisting}
-git clone https://github.com/MrMehulkhanna/edgebot.git
-cd edgebot && python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python scripts/run_demo.py --voice
-\end{lstlisting}
-
-% =====================================================================
-\chapter{Conclusion}\label{ch:conclusion}
-
-\section{Summary}
-In this project I built a voice-controlled warehouse robot in simulation and used it to try out most of the
-topics from UCS760. The main results are:
+\chapter{The non-RL parts, in one page}
+\label{ch:rest}
 \begin{itemize}
-\item On the grid MDP, value and policy iteration gave the same answer, and SARSA and Q-learning showed the
-expected difference between safe and optimal paths.
-\item The PPO navigation agent reached the goal in 96\% of new warehouse layouts. DQN also learned the task,
-both from lidar and from images.
-\item The arm succeeded in all pick-and-place and stacking trials. RL could learn reaching, but IK was more
-accurate.
-\item The distilled NLU model got 97.6\% of new commands fully correct, and 94\% of spoken commands were
-understood correctly end to end.
-\item After INT8 quantisation the models are 3 to 4 times smaller and still run in under a millisecond.
+\item \textbf{Speech to text:} Whisper-base~\cite{whisper} (pre-trained), 2.8\% word error on clean audio.
+\item \textbf{Understanding:} a small BERT-style network~\cite{jointbert} predicts the intent
+(e.g.\ \texttt{move\_object}) and tags slots (colour, object, source, destination). A big DistilBERT
+teacher is distilled into a 0.49M-parameter student~\cite{tinybert}: 97.6\% frame accuracy.
+\item \textbf{Global route:} A* on an occupancy grid gives waypoints; PPO follows them and avoids clutter.
+\item \textbf{Arm:} 3-joint arm, exact closed-form inverse kinematics + PD control; 100/100 pick-and-place.
+\item \textbf{Reply:} Piper (VITS~\cite{vits}) text-to-speech.
+\item \textbf{Edge}~\cite{edgesurvey2026}\textbf{:} all networks exported to ONNX and INT8; PPO actor is 26 KB and runs in 0.006 ms.
 \end{itemize}
-
-\section{Limitations}
-\begin{itemize}
-\item The simulation is 2-D with perfect sensors, and the arm only moves in one plane.
-\item The speech tests use one synthetic voice, so real users would probably have a higher error rate.
-\item The command dataset is generated from templates, not collected from real people.
-\item Speed was measured on a laptop, not on a Jetson.
-\end{itemize}
-
-\section{Future work}
-\begin{itemize}
-\item Run the policy on a real JetBot, adding sensor noise and domain randomisation during training.
-\item Use a 6-joint arm and learn grasping from camera images.
-\item Collect real voice commands to test and improve the ASR and NLU.
-\item Test the exported models with TensorRT on a Jetson Orin Nano.
-\end{itemize}
+Design rule: \emph{learn what is hard to model (cluttered driving), compute what is known exactly (arm
+geometry, shortest route).}
 
 % =====================================================================
+\chapter{Conclusion and limitations}
+EdgeBot shows the course's RL path end to end: tabular Q-learning/SARSA $\to$ DQN $\to$ PPO, deployed as a
+26 KB INT8 policy, plus a new, measured contribution: a map-free lidar shield that removes collisions for
+both full-precision and quantised policies. Limitations: simulation only (no real robot), latency measured
+on a laptop CPU not a Jetson, a 24-beam lidar can miss very thin obstacles between beams, and the shield
+does not fix timeouts.
+
 \begin{thebibliography}{99}
-\addcontentsline{toc}{chapter}{References}
-\small
 \bibitem{sutton} R.~S.~Sutton and A.~G.~Barto, \emph{Reinforcement Learning: An Introduction}, 2nd ed., MIT Press, 2018.
-\bibitem{wiering} M.~Wiering and M.~van Otterlo (eds.), \emph{Reinforcement Learning: State of the Art}, Springer, 2012.
-\bibitem{russell} S.~Russell and P.~Norvig, \emph{Artificial Intelligence: A Modern Approach}, Pearson, 2016.
-\bibitem{jurafsky} D.~Jurafsky and J.~H.~Martin, \emph{Speech and Language Processing}, 3rd ed.\ draft, 2019.
-\bibitem{goodfellow} I.~Goodfellow, Y.~Bengio and A.~Courville, \emph{Deep Learning}, MIT Press, 2016.
-\bibitem{dqn} V.~Mnih et al., ``Human-level control through deep reinforcement learning,'' \emph{Nature}, 2015.
+\bibitem{dqn} V.~Mnih et al., ``Human-level control through deep reinforcement learning,'' \emph{Nature}, 518, 2015.
 \bibitem{ddqn} H.~van Hasselt, A.~Guez and D.~Silver, ``Deep reinforcement learning with double Q-learning,'' AAAI, 2016.
-\bibitem{dueling} Z.~Wang et al., ``Dueling network architectures for deep reinforcement learning,'' ICML, 2016.
 \bibitem{ppo} J.~Schulman et al., ``Proximal policy optimization algorithms,'' arXiv:1707.06347, 2017.
 \bibitem{gae} J.~Schulman et al., ``High-dimensional continuous control using generalized advantage estimation,'' ICLR, 2016.
-\bibitem{bert} J.~Devlin et al., ``BERT: Pre-training of deep bidirectional transformers for language understanding,'' NAACL, 2019.
-\bibitem{distilbert} V.~Sanh et al., ``DistilBERT, a distilled version of BERT,'' arXiv:1910.01108, 2019.
+\bibitem{alshiekh} M.~Alshiekh et al., ``Safe reinforcement learning via shielding,'' AAAI, 2018.
+\bibitem{quarl} S.~Krishnan et al., ``QuaRL: Quantization for fast and environmentally sustainable reinforcement learning,'' TMLR, 2022.
+\bibitem{quantprune2024} ``The impact of quantization and pruning on deep reinforcement learning models,'' arXiv:2407.04803, 2024.
+\bibitem{realizable2024} ``Realizable continuous-space shields for safe reinforcement learning,'' arXiv:2410.02038, 2024 (PPO + lidar navigation).
+\bibitem{quantctrl2025} ``Learning quantized continuous controllers for integer hardware,'' arXiv:2511.07046, 2025.
+\bibitem{reasan2025} ``REASAN: Learning reactive safe navigation for legged robots,'' arXiv:2512.09537, 2025 (RL safety-shield policy with a single lidar).
+\bibitem{edgesurvey2026} ``Embodied foundation models at the edge: a survey of deployment constraints and mitigation strategies,'' arXiv:2603.16952, 2026.
+\bibitem{uavsafe2026} ``Lightweight safe reinforcement learning for end-to-end UAV navigation,'' arXiv:2607.01794, 2026 (safe RL under sparse lidar).
 \bibitem{jointbert} Q.~Chen, Z.~Zhuo and W.~Wang, ``BERT for joint intent classification and slot filling,'' arXiv:1902.10909, 2019.
 \bibitem{tinybert} X.~Jiao et al., ``TinyBERT: Distilling BERT for natural language understanding,'' Findings of EMNLP, 2020.
 \bibitem{whisper} A.~Radford et al., ``Robust speech recognition via large-scale weak supervision,'' ICML, 2023.
-\bibitem{quartznet} S.~Kriman et al., ``QuartzNet: Deep automatic speech recognition with 1D time-channel separable convolutions,'' ICASSP, 2020.
-\bibitem{tacotron} J.~Shen et al., ``Natural TTS synthesis by conditioning WaveNet on mel spectrogram predictions,'' ICASSP, 2018.
 \bibitem{vits} J.~Kim, J.~Kong and J.~Son, ``Conditional variational autoencoder with adversarial learning for end-to-end text-to-speech,'' ICML, 2021.
-\bibitem{yoshikawa} T.~Yoshikawa, ``Manipulability of robotic mechanisms,'' \emph{International Journal of Robotics Research}, 1985.
-\bibitem{spong} M.~W.~Spong, S.~Hutchinson and M.~Vidyasagar, \emph{Robot Modeling and Control}, Wiley, 2006.
 \end{thebibliography}
-
 \end{document}

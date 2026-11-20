@@ -44,3 +44,18 @@ def test_every_station_pair_is_connected():
         for b in names:
             if a != b:
                 assert plan_path(scn, np.array(wh.STATIONS[a]), np.array(wh.STATIONS[b]), inflate=0.24) is not None
+
+
+def test_shield_blocks_driving_into_wall():
+    import numpy as np
+
+    from edgebot.envs.jetbot_nav import JetBotNavEnv
+    from edgebot.rl.shield import LidarShield
+
+    env = JetBotNavEnv()
+    env.reset(seed=0)
+    env.pose = np.array([0.2, 2.5, np.pi])  # facing the left wall, 8 cm of clearance
+    shield = LidarShield(env)
+    safe = shield(np.array([1.0, 0.0], dtype=np.float32))  # full speed ahead
+    assert shield.interventions == 1
+    assert env._to_cmd(safe)[0] < 1.0

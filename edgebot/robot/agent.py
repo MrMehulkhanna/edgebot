@@ -311,13 +311,16 @@ class EdgeBot:
         if wps is None:
             return False, f"I could not find a path to the {pretty(dest)}."
         env = self.env
+        from edgebot.rl.shield import LidarShield
+
+        shield = LidarShield(env)  # novelty: lidar safety filter between policy and motors
         obs, _ = env.reset(options={"scenario": self.scn, "start": self.pose, "goal": wps[0]})
         self._plan = [self.pose[:2].copy()] + wps
         k = 0
         start = self.pose.copy()
         self.last_task = f"driving to the {pretty(dest)}"
         for step in range(max_steps):
-            obs, _, term, _, info = env.step(self.policy(obs))
+            obs, _, term, _, info = env.step(shield(self.policy(obs)))
             if k < len(wps) - 1 and info["distance"] < 0.35:
                 k += 1
                 env.set_goal(wps[k])

@@ -9,9 +9,18 @@ from edgebot.envs.jetbot_nav import JetBotNavEnv
 EVAL_SEED_OFFSET = 1_000_000  # evaluation layouts never overlap training seeds
 
 
-def evaluate_nav(policy_fn, episodes: int = 200, seed: int = 0, record: int = 0, **env_kwargs) -> dict:
-    """policy_fn(obs) -> action. Returns aggregate metrics (+ optional frames of first episodes)."""
+def evaluate_nav(policy_fn, episodes: int = 200, seed: int = 0, record: int = 0, shield: bool = False,
+                 **env_kwargs) -> dict:
+    """policy_fn(obs) -> action. Returns aggregate metrics (+ optional frames of first episodes).
+
+    shield=True filters every action through edgebot.rl.shield.LidarShield.
+    """
     env = JetBotNavEnv(**env_kwargs)
+    guard = None
+    if shield:
+        from edgebot.rl.shield import LidarShield
+
+        guard = LidarShield(env)
     succ, coll, timeout, returns, lengths, eff = [], [], [], [], [], []
     frames = []
     for ep in range(episodes):
@@ -19,7 +28,7 @@ def evaluate_nav(policy_fn, episodes: int = 200, seed: int = 0, record: int = 0,
         straight = np.linalg.norm(env.pose[:2] - env.scn.goal) - env.goal_tol
         G = 0.0
         while True:
-            obs, r, term, trunc, info = env.step(policy_fn(obs))
+            obs, r, term, trunc, info = env.step(guard(policy_fn(obs)) if guard else policy_fn(obs))
             G += r
             if ep < record:
                 frames.append(env.render(scale=80))
@@ -44,6 +53,8 @@ def evaluate_nav(policy_fn, episodes: int = 200, seed: int = 0, record: int = 0,
         "mean_steps": float(np.mean(lengths)),
         "path_efficiency": float(np.mean(eff)) if eff else 0.0,
     }
+    if guard:
+        out["shield_intervention_rate"] = guard.intervention_rate
     if record:
         out["frames"] = frames
     return out
