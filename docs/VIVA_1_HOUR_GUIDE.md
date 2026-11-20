@@ -198,9 +198,9 @@ only the current lidar scan.
   data. Q-learning and DQN are off-policy: they can reuse old data from a replay buffer.
 - **Why does PPO use a critic?** To compute the advantage. Subtracting a baseline V(s) lowers the
   variance of the policy gradient.
-- **Exploration?** DQN uses ε-greedy (ε decays). PPO samples from its Gaussian, plus an entropy bonus.
+- **Exploration?** DQN uses ε-greedy (ε decays). PPO samples from its Gaussian; the learned standard deviation shrinks as it gets confident (entropy bonus is 0 in my config).
 - **What is GAE λ?** λ = 0 uses the one-step TD error (low variance, more bias). λ = 1 uses the Monte
-  Carlo return (no bias, high variance). I used about 0.95.
+  Carlo return (no bias, high variance). I used 0.95, with γ = 0.99 and clip ε = 0.2.
 - **Why did dynamic INT8 break the pixel DQN?** Per-tensor dynamic scaling crushes the small CNN
   activations, which changes which Q-value is the max. Static calibrated per-channel INT8 recovers most
   of it (47% → 74%).
