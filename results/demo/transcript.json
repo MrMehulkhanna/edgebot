@@ -7,10 +7,10 @@
     "picks": 2,
     "places": 2,
     "manip_failures": 0,
-    "nav_steps": 411
+    "nav_steps": 412
   },
-  "distance_m": 19.37206718176603,
-  "battery": 70.94189922735093,
+  "distance_m": 19.482637251913545,
+  "battery": 70.77604412212968,
   "inventory": {
     "shelf a": [
       [
@@ -79,9 +79,9 @@
       "response": "Hello! I am EdgeBot, your warehouse assistant. How can I help?",
       "success": true,
       "timings": {
-        "nlu_ms": 1.0669769999367418,
-        "execute_s": 4.522000381257385e-06,
-        "asr_s": 0.059968806999677327
+        "nlu_ms": 3.499821999866981,
+        "execute_s": 1.2775999493896961e-05,
+        "asr_s": 0.5778093499993702
       },
       "asr_text": "Hello JetBot."
     },
@@ -100,9 +100,9 @@
       "response": "Picked up the red box from the shelf A. Delivered the red box to the conveyor.",
       "success": true,
       "timings": {
-        "nlu_ms": 0.9396920004292042,
-        "execute_s": 2.4013657099994816,
-        "asr_s": 0.10072378099994239
+        "nlu_ms": 1.5789300014148466,
+        "execute_s": 4.839434351000818,
+        "asr_s": 0.7285209260007832
       },
       "asr_text": "Move the red box from shelf A to the conveyor."
     },
@@ -118,9 +118,9 @@
       "response": "Which colour item should I pick up?",
       "success": null,
       "timings": {
-        "nlu_ms": 0.9352950000902638,
-        "execute_s": 7.97099983174121e-06,
-        "asr_s": 0.09160842399978719
+        "nlu_ms": 2.757051999651594,
+        "execute_s": 2.5101999199250713e-05,
+        "asr_s": 0.5844166530005168
       },
       "asr_text": "Pick up the box."
     },
@@ -136,9 +136,9 @@
       "response": "Picked up the blue crate from the shelf B.",
       "success": true,
       "timings": {
-        "nlu_ms": 0.8545009995941655,
-        "execute_s": 1.3159885149998445,
-        "asr_s": 0.05175899100049719
+        "nlu_ms": 2.481849000105285,
+        "execute_s": 2.7256953160012927,
+        "asr_s": 0.4733224909996352
       },
       "asr_text": "The blue one."
     },
@@ -154,9 +154,9 @@
       "response": "Delivered the blue crate to the packing station.",
       "success": true,
       "timings": {
-        "nlu_ms": 1.0481839999556541,
-        "execute_s": 1.4723827520001578,
-        "asr_s": 0.10225036600058957
+        "nlu_ms": 3.497682999295648,
+        "execute_s": 2.873485566000454,
+        "asr_s": 0.5875905949997104
       },
       "asr_text": "Put it on the packing station."
     },
@@ -177,9 +177,9 @@
       "response": "Built a tower of red, green, blue blocks at the workbench, bottom to top.",
       "success": true,
       "timings": {
-        "nlu_ms": 1.1466370006019133,
-        "execute_s": 5.029940891000479,
-        "asr_s": 0.13394824099941616
+        "nlu_ms": 1.922220000778907,
+        "execute_s": 9.969684783000048,
+        "asr_s": 0.7574741829994309
       },
       "asr_text": "Stack the red, green and blue blocks at the workbench."
     },
@@ -190,12 +190,12 @@
         "confidence": 0.9998,
         "slots": {}
       },
-      "response": "I am at the workbench, not carrying anything. Battery at 77 percent, 15.1 metres travelled. Last task: stacking red, green, blue at the workbench.",
+      "response": "I am at the workbench, not carrying anything. Battery at 77 percent, 15.2 metres travelled. Last task: stacking red, green, blue at the workbench.",
       "success": true,
       "timings": {
-        "nlu_ms": 0.8787550004853983,
-        "execute_s": 1.6110000615299214e-05,
-        "asr_s": 0.07298051599991595
+        "nlu_ms": 2.4830269994708942,
+        "execute_s": 4.689900015364401e-05,
+        "asr_s": 0.5422977500002162
       },
       "asr_text": "What is your status?"
     },
@@ -211,9 +211,9 @@
       "response": "Arrived at the charging dock.",
       "success": true,
       "timings": {
-        "nlu_ms": 0.7143180000639404,
-        "execute_s": 0.6310133460001452,
-        "asr_s": 0.11296289199981402
+        "nlu_ms": 1.5533789992332458,
+        "execute_s": 1.2066186669999297,
+        "asr_s": 0.6359182060004969
       },
       "asr_text": "Go back to the charging dock."
     }
