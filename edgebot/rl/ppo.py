@@ -34,6 +34,7 @@ class PPOConfig:
     max_grad_norm: float = 0.5
     target_kl: float = 0.03
     hidden: tuple = (128, 128)
+    arch: str = "mlp"
     seed: int = 0
 
 
@@ -42,7 +43,7 @@ class PPO:
         self.cfg = cfg
         self.device = torch.device(device)
         self.continuous = continuous
-        self.ac = ActorCritic(obs_dim, act_dim, continuous, cfg.hidden).to(self.device)
+        self.ac = ActorCritic(obs_dim, act_dim, continuous, cfg.hidden, cfg.arch).to(self.device)
         self.opt = torch.optim.Adam(self.ac.parameters(), lr=cfg.lr, eps=1e-5)
 
     @torch.no_grad()
@@ -151,6 +152,11 @@ class PPO:
                         break
                 if stop:
                     break
+
+            if self.ac.obs_norm is not None:
+                # SimBa: update normaliser statistics from the collected batch, after the PPO update,
+                # so log-probs stored during this rollout stay consistent within the batch
+                self.ac.obs_norm.update(b_obs)
 
             if recent and (update % log_every == 0 or update == n_updates):
                 arr = np.array(recent)

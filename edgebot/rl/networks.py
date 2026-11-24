@@ -41,14 +41,76 @@ class NatureCNN(nn.Module):
         return self.net(x)
 
 
-class ActorCritic(nn.Module):
-    """Separate actor and critic MLPs; Gaussian (continuous) or categorical (discrete) policy."""
+class RunningNorm(nn.Module):
+    """Running mean/variance observation normaliser (SimBa component 1).
 
-    def __init__(self, obs_dim: int, act_dim: int, continuous: bool = True, hidden=(128, 128)):
+    Statistics change only when update() is called (during rollout collection);
+    they are saved with the model and frozen at evaluation and export."""
+
+    def __init__(self, dim: int, clip: float = 5.0):
+        super().__init__()
+        self.register_buffer("mean", torch.zeros(dim))
+        self.register_buffer("var", torch.ones(dim))
+        self.register_buffer("count", torch.tensor(1e-4))
+        self.clip = clip
+
+    @torch.no_grad()
+    def update(self, x):
+        x = x.reshape(-1, x.shape[-1])
+        b_mean, b_var, b_n = x.mean(0), x.var(0, unbiased=False), x.shape[0]
+        delta, tot = b_mean - self.mean, self.count + b_n
+        self.mean += delta * b_n / tot
+        self.var = (self.var * self.count + b_var * b_n + delta ** 2 * self.count * b_n / tot) / tot
+        self.count = tot
+
+    def forward(self, x):
+        return torch.clamp((x - self.mean) / torch.sqrt(self.var + 1e-8), -self.clip, self.clip)
+
+
+class SimBaBlock(nn.Module):
+    """Pre-LayerNorm residual feed-forward block (SimBa component 2)."""
+
+    def __init__(self, h: int):
+        super().__init__()
+        self.net = nn.Sequential(nn.LayerNorm(h), nn.Linear(h, 4 * h), nn.ReLU(), nn.Linear(4 * h, h))
+
+    def forward(self, x):
+        return x + self.net(x)
+
+
+class SimBa(nn.Module):
+    """SimBa network (Lee et al., ICLR 2025): observation normalisation, residual blocks and a
+    final LayerNorm (component 3). Biases the network towards simple, well-generalising functions."""
+
+    def __init__(self, norm: RunningNorm, in_dim: int, out_dim: int, hidden: int = 128, blocks: int = 2,
+                 out_std: float = 1.0):
+        super().__init__()
+        self.norm = norm
+        self.inp = layer_init(nn.Linear(in_dim, hidden))
+        self.blocks = nn.Sequential(*[SimBaBlock(hidden) for _ in range(blocks)])
+        self.ln = nn.LayerNorm(hidden)
+        self.out = layer_init(nn.Linear(hidden, out_dim), std=out_std)
+
+    def forward(self, x):
+        return self.out(self.ln(self.blocks(self.inp(self.norm(x)))))
+
+
+class ActorCritic(nn.Module):
+    """Separate actor and critic networks; Gaussian (continuous) or categorical (discrete) policy.
+
+    arch="mlp" is the plain tanh MLP used by the deployed policy; arch="simba" uses SimBa networks."""
+
+    def __init__(self, obs_dim: int, act_dim: int, continuous: bool = True, hidden=(128, 128), arch: str = "mlp"):
         super().__init__()
         self.continuous = continuous
-        self.critic = mlp(obs_dim, 1, hidden, out_std=1.0)
-        self.actor = mlp(obs_dim, act_dim, hidden, out_std=0.01)
+        self.obs_norm = None
+        if arch == "simba":
+            self.obs_norm = RunningNorm(obs_dim)
+            self.critic = SimBa(self.obs_norm, obs_dim, 1, hidden[0], len(hidden), out_std=1.0)
+            self.actor = SimBa(self.obs_norm, obs_dim, act_dim, hidden[0], len(hidden), out_std=0.01)
+        else:
+            self.critic = mlp(obs_dim, 1, hidden, out_std=1.0)
+            self.actor = mlp(obs_dim, act_dim, hidden, out_std=0.01)
         if continuous:
             self.log_std = nn.Parameter(torch.full((act_dim,), -0.5))
 
