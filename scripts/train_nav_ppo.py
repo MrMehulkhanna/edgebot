@@ -27,23 +27,27 @@ def main():
     p.add_argument("--device", default="cpu")
     p.add_argument("--tag", default=None)
     p.add_argument("--eval-episodes", type=int, default=300)
+    p.add_argument("--arch", choices=["mlp", "simba"], default="mlp", help="simba = SimBa network (ICLR 2025)")
+    p.add_argument("--lidar-noise", type=float, default=0.0, help="training-time relative range noise")
+    p.add_argument("--lidar-mask", type=float, default=0.0, help="training-time fraction of spurious beams")
     args = p.parse_args()
 
     ensure_dirs()
     seed_everything(args.seed)
     torch.set_num_threads(4)
     tag = args.tag or f"ppo_{args.action}"
-    venv = make_vec_envs(args.n_envs, seed=args.seed * 1000, action_mode=args.action)
+    sensor = {"lidar_noise": args.lidar_noise, "lidar_mask": args.lidar_mask}
+    venv = make_vec_envs(args.n_envs, seed=args.seed * 1000, action_mode=args.action, **sensor)
     continuous = args.action == "continuous"
     act_dim = venv.action_space.shape[0] if continuous else venv.action_space.n
     cfg = PPOConfig(total_steps=args.steps, n_envs=args.n_envs, seed=args.seed,
-                    ent_coef=0.0 if continuous else 0.01)
+                    ent_coef=0.0 if continuous else 0.01, arch=args.arch)
     agent = PPO(venv.observation_space.shape[0], act_dim, continuous, cfg, args.device)
 
     ckpt = CHECKPOINTS / f"nav_{tag}.pt"
 
     def checkpoint(agent, history):
-        agent.save(str(ckpt), {"action_mode": args.action})
+        agent.save(str(ckpt), {"action_mode": args.action, "arch": args.arch, **sensor})
         save_json(history, RESULTS / f"nav_{tag}_history.json")
 
     history = agent.train(venv, log_every=10, callback=checkpoint)
@@ -51,7 +55,7 @@ def main():
 
     metrics = evaluate_nav(lambda o: agent.predict(o, deterministic=True), args.eval_episodes,
                            action_mode=args.action)
-    metrics.update({"algorithm": "PPO", "action_mode": args.action, "train_steps": args.steps,
+    metrics.update({"algorithm": "PPO", "arch": args.arch, **sensor, "action_mode": args.action, "train_steps": args.steps,
                     "train_time_s": history["time"][-1] if history["time"] else None})
     save_json(metrics, RESULTS / f"nav_{tag}_eval.json")
     print(metrics)
