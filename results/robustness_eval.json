@@ -1,0 +1,437 @@
+{
+  "episodes": 300,
+  "results": [
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "clean",
+      "shield": false,
+      "success_rate": 0.96,
+      "collision_rate": 0.02,
+      "timeout_rate": 0.02,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "clean",
+      "shield": true,
+      "success_rate": 0.96,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.04,
+      "intervention_rate": 0.05505006629783732
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "clean",
+      "shield": "robust",
+      "success_rate": 0.96,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.04,
+      "intervention_rate": 0.05769054808308171
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "noise 10%",
+      "shield": false,
+      "success_rate": 0.9566666666666667,
+      "collision_rate": 0.02666666666666667,
+      "timeout_rate": 0.016666666666666666,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "noise 10%",
+      "shield": true,
+      "success_rate": 0.9733333333333334,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.02666666666666667,
+      "intervention_rate": 0.03753037951018882
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "noise 10%",
+      "shield": "robust",
+      "success_rate": 0.97,
+      "collision_rate": 0.006666666666666667,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.03094400608422854
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "spurious beams 10%",
+      "shield": false,
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.03333333333333333,
+      "timeout_rate": 0.03,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "spurious beams 10%",
+      "shield": true,
+      "success_rate": 0.02666666666666667,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.9733333333333334,
+      "intervention_rate": 0.7537435931794579
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "spurious beams 10%",
+      "shield": "robust",
+      "success_rate": 0.9433333333333334,
+      "collision_rate": 0.0033333333333333335,
+      "timeout_rate": 0.05333333333333334,
+      "intervention_rate": 0.16865932784136473
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": false,
+      "success_rate": 0.9433333333333334,
+      "collision_rate": 0.03333333333333333,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": true,
+      "success_rate": 0.03,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.97,
+      "intervention_rate": 0.7556163771434955
+    },
+    {
+      "model": "PPO (deployed, FP32)",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": "robust",
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.01,
+      "timeout_rate": 0.05333333333333334,
+      "intervention_rate": 0.17393618909039288
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "clean",
+      "shield": false,
+      "success_rate": 0.9566666666666667,
+      "collision_rate": 0.03,
+      "timeout_rate": 0.013333333333333334,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "clean",
+      "shield": true,
+      "success_rate": 0.97,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.03,
+      "intervention_rate": 0.04575773123746443
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "clean",
+      "shield": "robust",
+      "success_rate": 0.97,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.03,
+      "intervention_rate": 0.046632124352331605
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "noise 10%",
+      "shield": false,
+      "success_rate": 0.9533333333333334,
+      "collision_rate": 0.03,
+      "timeout_rate": 0.016666666666666666,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "noise 10%",
+      "shield": true,
+      "success_rate": 0.9633333333333334,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.03666666666666667,
+      "intervention_rate": 0.036920980926430515
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "noise 10%",
+      "shield": "robust",
+      "success_rate": 0.9733333333333334,
+      "collision_rate": 0.0033333333333333335,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.02475224273167066
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "spurious beams 10%",
+      "shield": false,
+      "success_rate": 0.94,
+      "collision_rate": 0.03,
+      "timeout_rate": 0.03,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "spurious beams 10%",
+      "shield": true,
+      "success_rate": 0.02666666666666667,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.9733333333333334,
+      "intervention_rate": 0.7537802278738102
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "spurious beams 10%",
+      "shield": "robust",
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.06333333333333334,
+      "intervention_rate": 0.16740041559539323
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": false,
+      "success_rate": 0.9466666666666667,
+      "collision_rate": 0.03,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": true,
+      "success_rate": 0.03,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.97,
+      "intervention_rate": 0.7556546421706674
+    },
+    {
+      "model": "PPO (deployed, INT8)",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": "robust",
+      "success_rate": 0.95,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.05,
+      "intervention_rate": 0.16756660110852853
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "clean",
+      "shield": false,
+      "success_rate": 0.9066666666666666,
+      "collision_rate": 0.04666666666666667,
+      "timeout_rate": 0.04666666666666667,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "clean",
+      "shield": true,
+      "success_rate": 0.9166666666666666,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.08333333333333333,
+      "intervention_rate": 0.11272321428571429
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "clean",
+      "shield": "robust",
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.06333333333333334,
+      "intervention_rate": 0.06844697951775992
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "noise 10%",
+      "shield": false,
+      "success_rate": 0.92,
+      "collision_rate": 0.05,
+      "timeout_rate": 0.03,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "noise 10%",
+      "shield": true,
+      "success_rate": 0.94,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.06,
+      "intervention_rate": 0.05778798316111749
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "noise 10%",
+      "shield": "robust",
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.006666666666666667,
+      "timeout_rate": 0.056666666666666664,
+      "intervention_rate": 0.056503105046794365
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "spurious beams 10%",
+      "shield": false,
+      "success_rate": 0.93,
+      "collision_rate": 0.03666666666666667,
+      "timeout_rate": 0.03333333333333333,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "spurious beams 10%",
+      "shield": true,
+      "success_rate": 0.01,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.99,
+      "intervention_rate": 0.7540059281050121
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "spurious beams 10%",
+      "shield": "robust",
+      "success_rate": 0.9533333333333334,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.04666666666666667,
+      "intervention_rate": 0.16718598904050713
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": false,
+      "success_rate": 0.8933333333333333,
+      "collision_rate": 0.07,
+      "timeout_rate": 0.03666666666666667,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": true,
+      "success_rate": 0.013333333333333334,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.9866666666666667,
+      "intervention_rate": 0.7564309666781788
+    },
+    {
+      "model": "PPO + domain randomisation",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": "robust",
+      "success_rate": 0.9266666666666666,
+      "collision_rate": 0.01,
+      "timeout_rate": 0.06333333333333334,
+      "intervention_rate": 0.17220310415057238
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "clean",
+      "shield": false,
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.03666666666666667,
+      "timeout_rate": 0.02666666666666667,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "clean",
+      "shield": true,
+      "success_rate": 0.9466666666666667,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.05333333333333334,
+      "intervention_rate": 0.06065977776816983
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "clean",
+      "shield": "robust",
+      "success_rate": 0.9433333333333334,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.056666666666666664,
+      "intervention_rate": 0.06500578877406629
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "noise 10%",
+      "shield": false,
+      "success_rate": 0.9533333333333334,
+      "collision_rate": 0.03,
+      "timeout_rate": 0.016666666666666666,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "noise 10%",
+      "shield": true,
+      "success_rate": 0.9766666666666667,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.03265890613451589
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "noise 10%",
+      "shield": "robust",
+      "success_rate": 0.9766666666666667,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.02589447306139496
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "spurious beams 10%",
+      "shield": false,
+      "success_rate": 0.95,
+      "collision_rate": 0.03,
+      "timeout_rate": 0.02,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "spurious beams 10%",
+      "shield": true,
+      "success_rate": 0.013333333333333334,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.9866666666666667,
+      "intervention_rate": 0.7547833051526208
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "spurious beams 10%",
+      "shield": "robust",
+      "success_rate": 0.96,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.04,
+      "intervention_rate": 0.16517793846590104
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": false,
+      "success_rate": 0.9366666666666666,
+      "collision_rate": 0.04,
+      "timeout_rate": 0.023333333333333334,
+      "intervention_rate": 0.0
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": true,
+      "success_rate": 0.006666666666666667,
+      "collision_rate": 0.0,
+      "timeout_rate": 0.9933333333333333,
+      "intervention_rate": 0.7569764080670625
+    },
+    {
+      "model": "PPO + SimBa network",
+      "condition": "noise + spurious (Omni-Perception)",
+      "shield": "robust",
+      "success_rate": 0.95,
+      "collision_rate": 0.006666666666666667,
+      "timeout_rate": 0.043333333333333335,
+      "intervention_rate": 0.16643074527567414
+    }
+  ]
+}
