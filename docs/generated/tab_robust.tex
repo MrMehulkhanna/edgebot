@@ -1,0 +1,21 @@
+\begin{tabular}{lllrrr}
+\toprule
+Policy & Lidar & Shield & Success & Collision & Timeout \\
+\midrule
+PPO (deployed, FP32) & clean & none & 96.0\% & 2.0\% & 2.0\% \\
+ & clean & original & 96.0\% & 0.0\% & 4.0\% \\
+ & clean & robust & 96.0\% & 0.0\% & 4.0\% \\
+ & corrupted & none & 94.3\% & 3.3\% & 2.3\% \\
+ & corrupted & original & 3.0\% & 0.0\% & 97.0\% \\
+ & corrupted & robust & 93.7\% & 1.0\% & 5.3\% \\
+PPO (deployed, INT8) & corrupted & none & 94.7\% & 3.0\% & 2.3\% \\
+ & corrupted & original & 3.0\% & 0.0\% & 97.0\% \\
+ & corrupted & robust & 95.0\% & 0.0\% & 5.0\% \\
+PPO + domain randomisation & corrupted & none & 89.3\% & 7.0\% & 3.7\% \\
+ & corrupted & original & 1.3\% & 0.0\% & 98.7\% \\
+ & corrupted & robust & 92.7\% & 1.0\% & 6.3\% \\
+PPO + SimBa network & corrupted & none & 93.7\% & 4.0\% & 2.3\% \\
+ & corrupted & original & 0.7\% & 0.0\% & 99.3\% \\
+ & corrupted & robust & 95.0\% & 0.7\% & 4.3\% \\
+\bottomrule
+\end{tabular}
