@@ -38,6 +38,17 @@ You say *"move the red box from shelf A to the conveyor"*. EdgeBot transcribes i
 | **Lab:** Conversational VoiceBot (JetBot commands / feedback) | `edgebot/robot/agent.py`, `scripts/run_demo.py` | Multi-turn voice missions with clarification and context |
 | GPU computing, deployment on Jetson | `edgebot/edge/export.py`, `scripts/export_edge.py` | ONNX export, INT8 quantisation, latency, size, accuracy |
 
+## Recent techniques (2024–2026) tested on top of the project
+
+| Technique (paper) | What I did | Result |
+|---|---|---|
+| Faulty-lidar testing (Omni-Perception, 2025) | 10% fake short beams + 10% range noise | PPO 96% → 94%; the original shield froze the robot (3%) |
+| **Robust shield** (median filter) | 3-beam median filter before the safety check | 94–95% success, 0–1% collisions on corrupted lidar |
+| Domain randomisation (sim-to-real, 2025) | PPO trained with the same corruption | did not help here (89% on corrupted lidar) |
+| SimBa network (ICLR 2025) | PPO with a SimBa actor and critic | reached 90% training success 4× faster |
+
+Run: `python scripts/eval_robustness.py` (results in `results/robustness_eval.json`).
+
 ## Architecture
 
 ```
