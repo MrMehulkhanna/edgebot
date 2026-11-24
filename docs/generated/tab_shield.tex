@@ -1,0 +1,20 @@
+\begin{tabular}{llrrrr}
+\toprule
+Policy & Shield & Success & Collision & Timeout & Shield active \\
+\midrule
+PPO lidar FP32 & off & 96.0\% & 2.0\% & 2.0\% & -- \\
+PPO lidar FP32 & on & 96.0\% & \textbf{0.0\%} & 4.0\% & 5.5\% \\
+\midrule
+PPO lidar INT8 & off & 95.7\% & 3.0\% & 1.3\% & -- \\
+PPO lidar INT8 & on & 97.0\% & \textbf{0.0\%} & 3.0\% & 4.6\% \\
+\midrule
+DQN pixels FP32 & off & 83.7\% & 1.0\% & 15.3\% & -- \\
+DQN pixels FP32 & on & 83.3\% & \textbf{0.0\%} & 16.7\% & 7.2\% \\
+\midrule
+DQN pixels INT8 (dynamic) & off & 47.0\% & 1.3\% & 51.7\% & -- \\
+DQN pixels INT8 (dynamic) & on & 46.3\% & \textbf{0.0\%} & 53.7\% & 3.6\% \\
+\midrule
+DQN pixels INT8 (static) & off & 73.7\% & 1.0\% & 25.3\% & -- \\
+DQN pixels INT8 (static) & on & 72.3\% & \textbf{0.0\%} & 27.7\% & 5.6\% \\
+\bottomrule
+\end{tabular}

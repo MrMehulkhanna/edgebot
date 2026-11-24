@@ -1,0 +1,10 @@
+\begin{tabular}{lrrrrr}
+\toprule
+Model & Params & Intent acc. & Slot F1 & Frame acc. & Intent (noisy) \\
+\midrule
+BoW + logistic regression & -- & 93.3\% & -- & -- & 92.6\% \\
+JointBERT-mini (scratch) & 0.32M & 93.9\% & 99.0\% & 91.4\% & 92.1\% \\
+JointBERT (DistilBERT fine-tuned) & 66.38M & 99.9\% & 100.0\% & 99.9\% & 99.4\% \\
+JointBERT-mini (distilled, deployed) & 0.49M & 97.6\% & 99.3\% & 97.6\% & 97.1\% \\
+\bottomrule
+\end{tabular}

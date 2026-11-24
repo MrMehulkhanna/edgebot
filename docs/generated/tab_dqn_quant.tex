@@ -1,0 +1,10 @@
+\begin{tabular}{lrrr}
+\toprule
+DQN (pixels) variant & Size (KB) & ORT latency (ms) & Nav. success \\
+\midrule
+FP32 & 1322 & 0.072 & 81.0\% \\
+INT8 dynamic, per-tensor & 341 & 0.249 & 42.0\% \\
+INT8 dynamic, per-channel & -- & -- & 65.0\% \\
+INT8 static QDQ, per-channel, calibrated & 347 & 0.044 & 74.0\% \\
+\bottomrule
+\end{tabular}

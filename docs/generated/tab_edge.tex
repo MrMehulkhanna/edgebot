@@ -1,0 +1,10 @@
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & Params & ONNX FP32 / INT8 & PyTorch CPU & PyTorch CUDA & ORT FP32 & ORT INT8 \\
+ & & & (ms) & (ms) & (ms) & (ms) \\
+\midrule
+PPO actor & 21k & 82 / 26 KB & 0.022 & 0.048 & 0.005 & 0.006 \\
+DQN (CNN) & 338k & 1322 / 341 KB & 0.187 & 0.131 & 0.072 & 0.249 \\
+JointBERT-mini & 488k & 2180 / 751 KB & 0.676 & 0.748 & 0.215 & 0.329 \\
+\bottomrule
+\end{tabular}
