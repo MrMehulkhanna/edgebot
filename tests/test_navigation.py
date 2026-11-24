@@ -59,3 +59,21 @@ def test_shield_blocks_driving_into_wall():
     safe = shield(np.array([1.0, 0.0], dtype=np.float32))  # full speed ahead
     assert shield.interventions == 1
     assert env._to_cmd(safe)[0] < 1.0
+
+
+def test_robust_shield_ignores_single_spurious_beam():
+    import numpy as np
+
+    from edgebot.envs.jetbot_nav import JetBotNavEnv
+    from edgebot.rl.shield import LidarShield
+
+    env = JetBotNavEnv()
+    env.reset(seed=0)
+    env.pose = np.array([3.0, 2.5, 0.0])
+    env._scan_key = (env.t, *env.pose)
+    env._scan = np.full(env.n_rays, env.max_range)
+    env._scan[np.argmin(np.abs(env.ray_angles))] = 0.1  # one fake return straight ahead
+    plain, robust = LidarShield(env), LidarShield(env, median_filter=True)
+    plain(np.array([1.0, 0.0], dtype=np.float32))
+    robust(np.array([1.0, 0.0], dtype=np.float32))
+    assert plain.interventions == 1 and robust.interventions == 0

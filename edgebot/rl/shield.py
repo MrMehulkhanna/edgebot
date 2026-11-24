@@ -24,14 +24,19 @@ _FALLBACK = np.concatenate([DISCRETE_ACTIONS, [[0.3, 0.0], [0.3, 0.8], [0.3, -0.
 
 
 class LidarShield:
-    def __init__(self, env, horizon: int = 5, margin: float = 0.04):
+    def __init__(self, env, horizon: int = 5, margin: float = 0.04, median_filter: bool = False):
         self.env, self.horizon, self.margin = env, horizon, margin
+        # robust variant: a 3-beam circular median filter removes isolated spurious returns
+        # (a real obstacle near the robot covers at least two adjacent beams)
+        self.median_filter = median_filter
         self.interventions = 0
         self.steps = 0
 
     def _points(self) -> np.ndarray:
         """Lidar returns as (x, y) points in the robot frame (x forward)."""
-        r = self.env.lidar()
+        r = self.env.sensed_lidar()
+        if self.median_filter:
+            r = np.median(np.stack([np.roll(r, 1), r, np.roll(r, -1)]), axis=0)
         keep = r < self.env.max_range - 1e-6
         a = self.env.ray_angles[keep]
         return np.stack([r[keep] * np.cos(a), r[keep] * np.sin(a)], axis=1)

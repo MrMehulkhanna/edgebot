@@ -9,18 +9,19 @@ from edgebot.envs.jetbot_nav import JetBotNavEnv
 EVAL_SEED_OFFSET = 1_000_000  # evaluation layouts never overlap training seeds
 
 
-def evaluate_nav(policy_fn, episodes: int = 200, seed: int = 0, record: int = 0, shield: bool = False,
+def evaluate_nav(policy_fn, episodes: int = 200, seed: int = 0, record: int = 0, shield: bool | str = False,
                  **env_kwargs) -> dict:
     """policy_fn(obs) -> action. Returns aggregate metrics (+ optional frames of first episodes).
 
-    shield=True filters every action through edgebot.rl.shield.LidarShield.
+    shield=True filters every action through edgebot.rl.shield.LidarShield;
+    shield="robust" uses the median-filtered shield.
     """
     env = JetBotNavEnv(**env_kwargs)
     guard = None
     if shield:
         from edgebot.rl.shield import LidarShield
 
-        guard = LidarShield(env)
+        guard = LidarShield(env, median_filter=(shield == "robust"))
     succ, coll, timeout, returns, lengths, eff = [], [], [], [], [], []
     frames = []
     for ep in range(episodes):
