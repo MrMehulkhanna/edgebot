@@ -13,3 +13,4 @@ docs/*.toc
 docs/*.nav
 docs/*.snm
 docs/*.vrb
+.claude/
