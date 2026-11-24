@@ -1,0 +1,243 @@
+\documentclass[12pt,a4paper,oneside]{report}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{adjustbox}
+\usepackage{graphicx,booktabs,amsmath,amssymb,xcolor,tikz,float,caption,subcaption,enumitem,array}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usetikzlibrary{arrows.meta,positioning}
+\graphicspath{{../results/figures/}{./}}
+\setlist{itemsep=2pt,topsep=4pt}
+\captionsetup{font=small}
+\onehalfspacing
+\newcommand{\fit}[1]{\begin{adjustbox}{max width=\linewidth}\input{generated/#1.tex}\end{adjustbox}}
+
+\lstset{basicstyle=\ttfamily\small,frame=single,breaklines=true,columns=fullflexible,xleftmargin=4pt,xrightmargin=4pt}
+
+\titleformat{\chapter}[hang]{\normalfont\Large\bfseries}{\thechapter.}{0.6em}{}
+\titlespacing*{\chapter}{0pt}{-10pt}{16pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small UCS760 Project Report}
+\fancyhead[R]{\small EdgeBot}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\renewcommand{\bibname}{References}
+\begin{document}
+
+% ---------------------------------------------------------------------
+% Cover page
+% ---------------------------------------------------------------------
+\begin{titlepage}
+\newgeometry{margin=2.2cm}
+\centering
+\includegraphics[width=0.8\linewidth]{thapar_logo.png}\par
+\vspace{2cm}
+{\large Project Report (Brief)\par}
+\vspace{0.8cm}
+{\LARGE\bfseries EdgeBot\par}\vspace{0.4cm}{\Large A Voice-Commanded Warehouse Robot\\[4pt] using Reinforcement Learning\par}
+\vspace{2cm}
+{\large Course: UCS760 -- Reinforcement Learning\par}
+\vspace{2.5cm}
+\begin{minipage}[t]{0.47\linewidth}
+\raggedright
+{\large Submitted by:}\\[6pt]
+{\large\bfseries Mehul Khanna}\\[2pt]
+{\large Roll No.\ 10232334}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\linewidth}
+\raggedleft
+{\large Submitted to:}\\[6pt]
+{\large\bfseries Himika Nikhil}
+\end{minipage}
+\vfill
+{\large Department of Computer Science and Engineering\par}
+{\large Thapar Institute of Engineering and Technology, Patiala\par}
+\vspace{0.3cm}
+{\large November 2026\par}
+\restoregeometry
+\end{titlepage}
+\pagenumbering{arabic}
+\tableofcontents
+
+% =====================================================================
+\chapter{What the project is, and why it is software only}
+
+\textbf{Problem.} In a warehouse, a worker should be able to \emph{say} ``move the red box from shelf A to
+the conveyor'' and a small robot should do it: drive through clutter without hitting anything, pick the
+box, deliver it and reply. The hard part for reinforcement learning (RL) is the driving: the layout
+changes every day (boxes, pallets, people), so a hand-written path follower is not enough. The robot must
+\emph{learn} a policy that reacts to whatever its lidar sees.
+
+\textbf{Why software (simulation) and not hardware.} I built and tested everything in simulation, on purpose:
+\begin{itemize}
+\item \textbf{RL needs millions of trials and crashes.} The PPO policy needed 5 million steps and
+thousands of collisions to learn. On a real robot that is weeks of driving and broken hardware; in my
+NumPy simulator it is 25 minutes on a laptop.
+\item \textbf{Fair, repeatable evaluation.} Every algorithm is tested on the \emph{same} 300 unseen random
+warehouses, with fixed seeds. A real floor cannot be reset to the same state 300 times.
+\item \textbf{The software is the course content.} MDPs, TD learning, DQN and PPO are algorithms; the
+syllabus does not require a robot. The simulator follows the standard Gymnasium API with a real JetBot
+footprint, a 24-beam lidar and unicycle kinematics, so the same policy can be moved to a robot.
+\item \textbf{Edge-ready anyway.} Trained policies are exported to ONNX and INT8, the format a Jetson
+runs. I measured latency on a laptop CPU, not on a Jetson; that is stated honestly as a limitation.
+\end{itemize}
+
+\textbf{Pipeline (one sentence per box).}
+\begin{center}
+\begin{tikzpicture}[node distance=4mm, every node/.style={draw, rounded corners, align=center, font=\small, minimum height=8mm}]
+\node (asr) {Speech\\Whisper};
+\node (nlu) [right=of asr] {NLU\\intent + slots};
+\node (plan) [right=of nlu] {A* route\\(waypoints)};
+\node (rl) [right=of plan, fill=blue!10] {\textbf{PPO policy}\\lidar $\to$ $(v,\omega)$};
+\node (sh) [right=of rl, fill=orange!20] {\textbf{Shield}\\(novelty)};
+\node (arm) [below=8mm of sh] {Arm IK\\pick / place};
+\node (tts) [left=of arm] {Spoken\\reply (TTS)};
+\draw[-{Latex}] (asr)--(nlu); \draw[-{Latex}] (nlu)--(plan); \draw[-{Latex}] (plan)--(rl);
+\draw[-{Latex}] (rl)--(sh); \draw[-{Latex}] (sh)--(arm); \draw[-{Latex}] (arm)--(tts);
+\end{tikzpicture}
+\end{center}
+The RL part, which is the subject of this report, is the blue and orange boxes. Speech, language and the
+arm use standard pre-built methods and are summarised in one page (Chapter~\ref{ch:rest}).
+
+% =====================================================================
+\chapter{The RL problem as an MDP}
+The robot's driving task is a Markov Decision Process $(S, A, P, R, \gamma)$:
+\begin{itemize}
+\item \textbf{State $s$} (29 numbers): 24 lidar distances, distance and bearing (as $\sin,\cos$) to the
+next waypoint, and the previous action.
+\item \textbf{Action $a$}: linear speed $v\in[0,0.5]$ m/s and turn rate $\omega\in[-2,2]$ rad/s.
+\item \textbf{Transition $P$}: unicycle kinematics, $x' = x + v\cos\theta\,\Delta t$,
+$y' = y + v\sin\theta\,\Delta t$, $\theta' = \theta+\omega\,\Delta t$, with $\Delta t=0.1$ s.
+\item \textbf{Reward $R$}: $+3\times$(progress toward goal) $-0.01$ per step, small penalty for being near
+obstacles and for jerky turning, $+10$ for reaching the goal, $-10$ for a collision (episode ends).
+\item \textbf{Discount} $\gamma=0.99$. Goal: learn $\pi(a\mid s)$ that maximises
+$\mathbb{E}\big[\sum_t \gamma^t r_t\big]$.
+\end{itemize}
+
+% =====================================================================
+\chapter{The three RL algorithms (all from the syllabus)}
+I explain only three algorithms. Each one leads to the next.
+
+\section{Q-learning (tabular TD control) --- the foundation}
+On a small grid version of the warehouse (each cell a state, 4 moves), the agent keeps a table $Q(s,a)$
+and updates it after every step:
+\[ Q(s,a) \leftarrow Q(s,a) + \alpha\big[r + \gamma \max_{a'} Q(s',a') - Q(s,a)\big]. \]
+The bracket is the \emph{TD error}: what I got plus what I expect next, minus what I predicted. It is
+\textbf{off-policy}: it learns the greedy policy while exploring with $\varepsilon$-greedy.
+\textbf{SARSA} uses $Q(s',a')$ of the action actually taken instead of the max, so it is
+\textbf{on-policy}. Result: on a floor with an oil spill, Q-learning finds the shortest route along the
+edge (return $-11$, optimal) while SARSA learns a safer route further away --- the classic
+Sutton~\&~Barto cliff-walking result~\cite{sutton}. Value iteration (Dynamic Programming) gives the exact
+answer and both match it.
+
+\textbf{Limit:} a table cannot hold a continuous 29-D lidar state. So we approximate $Q$ with a network.
+
+\section{DQN (deep Q-network) --- value-based deep RL}
+DQN~\cite{dqn} replaces the table by a neural network $Q_\phi(s,a)$ and minimises
+\[ L(\phi)=\big(r+\gamma\, Q_{\bar\phi}(s',\arg\max_{a'}Q_\phi(s',a')) - Q_\phi(s,a)\big)^2 .\]
+Three tricks make it stable: a \textbf{replay buffer} (train on random old transitions, breaking
+correlation), a \textbf{target network} $Q_{\bar\phi}$ (slowly updated copy), and \textbf{Double DQN}
+(choose $a'$ with the online net, evaluate it with the target net, which reduces over-estimation)~\cite{ddqn}.
+I use 5 discrete motions (forward, forward-left, forward-right, spin left, spin right), from lidar and also
+from a $64\times64$ top-down image with a CNN (``RL for vision'' in the syllabus).
+
+\textbf{Limit:} DQN needs discrete actions; real motors take continuous speeds.
+
+\section{PPO (proximal policy optimisation) --- the deployed policy}
+PPO~\cite{ppo} is a policy-gradient \emph{actor-critic} method. The actor outputs a Gaussian over
+$(v,\omega)$; the critic estimates $V(s)$. The advantage $\hat A_t$ (how much better an action was than
+average) is computed with GAE~\cite{gae}. PPO maximises the \emph{clipped} objective
+\[ L^{\text{CLIP}}=\mathbb{E}_t\Big[\min\big(\rho_t \hat A_t,\ \text{clip}(\rho_t,1-\epsilon,1+\epsilon)\hat A_t\big)\Big],
+\qquad \rho_t=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\text{old}}(a_t\mid s_t)},\ \epsilon=0.2 .\]
+The clip stops one update from changing the policy too much --- that is the whole idea of PPO. I train
+with 16 parallel environments for 5M steps.
+
+\section{Results on 300 unseen warehouses}
+\begin{center}\fit{tab_nav}\end{center}
+PPO (continuous) is deployed: 96\% success, smooth, continuous control. DQN is the value-based baseline.
+
+% =====================================================================
+\chapter{Novelty: a lidar safety shield that also protects quantised (INT8) policies}
+\label{ch:novel}
+
+\textbf{The gap.} Recent work shows two separate things. (1) Compressing RL policies to INT8 for edge
+hardware can silently change their actions and hurt them~\cite{quarl,quantprune2024,quantctrl2025}.
+(2) \emph{Shields} --- filters that block unsafe actions --- make RL safer~\cite{alshiekh,realizable2024,
+reasan2025,uavsafe2026}. But shields are usually built from a known model/map or are learned networks
+themselves, and they are studied on full-precision policies. I did not find work that uses a
+\textbf{map-free, training-free kinematic lidar shield as a safety net for quantised edge RL policies},
+inside a voice-commanded pipeline, and measures the effect FP32 vs INT8 side by side.
+
+\textbf{My method (\texttt{edgebot/rl/shield.py}, $\sim$60 lines).} At every control step:
+\begin{enumerate}
+\item The (FP32 or INT8) policy proposes an action $(v,\omega)$.
+\item The shield converts the current lidar scan into obstacle points around the robot.
+\item It simulates the next $H=5$ steps (0.5 s) with the unicycle model, holding that action.
+\item If any predicted position is closer than robot radius $+\,4$ cm to an obstacle point, the action is
+\emph{unsafe}: replace it by the nearest safe candidate (forward / turn / slow / spin). A pure spin never
+moves the robot, so a safe action always exists.
+\end{enumerate}
+It needs no map, no retraining and no extra network, so it costs almost nothing on an edge device, and it
+is written once and works for any policy (PPO or DQN, FP32 or INT8).
+
+\textbf{Result} (same 300 unseen layouts, \texttt{scripts/eval\_shield.py}):
+\begin{center}\fit{tab_shield}\end{center}
+\textbf{Reading the table.} With the shield, collisions fall to \textbf{0\%} for every model, including the
+INT8 ones, while the shield only steps in on 4--7\% of control steps. Success stays within about one point
+of the unshielded policy (PPO INT8 even improves, 95.7\%$\to$97.0\%): a few episodes that used to end in a
+crash now end in a timeout instead, which on a real robot is the safe way to fail. The honest limit: the shield prevents \emph{crashes}, not \emph{getting lost}. The badly
+quantised pixel DQN mostly fails by timing out (dithering), which a safety filter cannot fix; better
+quantisation (calibrated static INT8) is what fixes that.
+
+% =====================================================================
+\chapter{The non-RL parts, in one page}
+\label{ch:rest}
+\begin{itemize}
+\item \textbf{Speech to text:} Whisper-base~\cite{whisper} (pre-trained), 2.8\% word error on clean audio.
+\item \textbf{Understanding:} a small BERT-style network~\cite{jointbert} predicts the intent
+(e.g.\ \texttt{move\_object}) and tags slots (colour, object, source, destination). A big DistilBERT
+teacher is distilled into a 0.49M-parameter student~\cite{tinybert}: 97.6\% frame accuracy.
+\item \textbf{Global route:} A* on an occupancy grid gives waypoints; PPO follows them and avoids clutter.
+\item \textbf{Arm:} 3-joint arm, exact closed-form inverse kinematics + PD control; 100/100 pick-and-place.
+\item \textbf{Reply:} Piper (VITS~\cite{vits}) text-to-speech.
+\item \textbf{Edge}~\cite{edgesurvey2026}\textbf{:} all networks exported to ONNX and INT8; PPO actor is 26 KB and runs in 0.006 ms.
+\end{itemize}
+Design rule: \emph{learn what is hard to model (cluttered driving), compute what is known exactly (arm
+geometry, shortest route).}
+
+% =====================================================================
+\chapter{Conclusion and limitations}
+EdgeBot shows the course's RL path end to end: tabular Q-learning/SARSA $\to$ DQN $\to$ PPO, deployed as a
+26 KB INT8 policy, plus a new, measured contribution: a map-free lidar shield that removes collisions for
+both full-precision and quantised policies. Limitations: simulation only (no real robot), latency measured
+on a laptop CPU not a Jetson, a 24-beam lidar can miss very thin obstacles between beams, and the shield
+does not fix timeouts.
+
+\begin{thebibliography}{99}
+\bibitem{sutton} R.~S.~Sutton and A.~G.~Barto, \emph{Reinforcement Learning: An Introduction}, 2nd ed., MIT Press, 2018.
+\bibitem{dqn} V.~Mnih et al., ``Human-level control through deep reinforcement learning,'' \emph{Nature}, 518, 2015.
+\bibitem{ddqn} H.~van Hasselt, A.~Guez and D.~Silver, ``Deep reinforcement learning with double Q-learning,'' AAAI, 2016.
+\bibitem{ppo} J.~Schulman et al., ``Proximal policy optimization algorithms,'' arXiv:1707.06347, 2017.
+\bibitem{gae} J.~Schulman et al., ``High-dimensional continuous control using generalized advantage estimation,'' ICLR, 2016.
+\bibitem{alshiekh} M.~Alshiekh et al., ``Safe reinforcement learning via shielding,'' AAAI, 2018.
+\bibitem{quarl} S.~Krishnan et al., ``QuaRL: Quantization for fast and environmentally sustainable reinforcement learning,'' TMLR, 2022.
+\bibitem{quantprune2024} ``The impact of quantization and pruning on deep reinforcement learning models,'' arXiv:2407.04803, 2024.
+\bibitem{realizable2024} ``Realizable continuous-space shields for safe reinforcement learning,'' arXiv:2410.02038, 2024 (PPO + lidar navigation).
+\bibitem{quantctrl2025} ``Learning quantized continuous controllers for integer hardware,'' arXiv:2511.07046, 2025.
+\bibitem{reasan2025} ``REASAN: Learning reactive safe navigation for legged robots,'' arXiv:2512.09537, 2025 (RL safety-shield policy with a single lidar).
+\bibitem{edgesurvey2026} ``Embodied foundation models at the edge: a survey of deployment constraints and mitigation strategies,'' arXiv:2603.16952, 2026.
+\bibitem{uavsafe2026} ``Lightweight safe reinforcement learning for end-to-end UAV navigation,'' arXiv:2607.01794, 2026 (safe RL under sparse lidar).
+\bibitem{jointbert} Q.~Chen, Z.~Zhuo and W.~Wang, ``BERT for joint intent classification and slot filling,'' arXiv:1902.10909, 2019.
+\bibitem{tinybert} X.~Jiao et al., ``TinyBERT: Distilling BERT for natural language understanding,'' Findings of EMNLP, 2020.
+\bibitem{whisper} A.~Radford et al., ``Robust speech recognition via large-scale weak supervision,'' ICML, 2023.
+\bibitem{vits} J.~Kim, J.~Kong and J.~Son, ``Conditional variational autoencoder with adversarial learning for end-to-end text-to-speech,'' ICML, 2021.
+\end{thebibliography}
+\end{document}

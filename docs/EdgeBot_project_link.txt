@@ -1,0 +1,4 @@
+Project Name: EdgeBot - A Voice-Commanded Warehouse Robot using Reinforcement Learning
+Project Link: https://github.com/MrMehulkhanna/edgebot
+Repository Link: https://github.com/MrMehulkhanna/edgebot
+GitHub Repository Link: https://github.com/MrMehulkhanna/edgebot
