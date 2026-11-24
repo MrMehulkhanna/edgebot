@@ -50,7 +50,7 @@ class JetBotNavEnv(gym.Env):
                  max_range: float = 3.0, max_steps: int = 300, dt: float = 0.1, v_max: float = 0.5,
                  w_max: float = 2.0, world: tuple = (6.0, 5.0), goal_tolerance: float = 0.2,
                  render_mode: str | None = None, fixed_scenario: Scenario | None = None,
-                 difficulty: float = 1.0):
+                 difficulty: float = 1.0, lidar_noise: float = 0.0, lidar_mask: float = 0.0):
         assert obs_mode in ("lidar", "pixels")
         assert action_mode in ("continuous", "discrete")
         self.obs_mode, self.action_mode = obs_mode, action_mode
@@ -63,6 +63,11 @@ class JetBotNavEnv(gym.Env):
         self.render_mode = render_mode
         self.fixed_scenario = fixed_scenario
         self.difficulty = difficulty
+        # sensor corruption (off by default), following the LiDAR randomisation of Omni-Perception (2025):
+        # lidar_mask = fraction of beams replaced by a spurious short return in [0, 0.3] m,
+        # lidar_noise = relative range noise (uniform, +/- lidar_noise of the true distance)
+        self.lidar_noise, self.lidar_mask = lidar_noise, lidar_mask
+        self._scan, self._scan_key = None, None
         self.ray_angles = np.linspace(-np.pi, np.pi, n_rays, endpoint=False)
 
         if action_mode == "continuous":
@@ -177,6 +182,7 @@ class JetBotNavEnv(gym.Env):
             self.scn.goal = np.asarray(options["goal"], dtype=float)
         self.prev_action = np.zeros(2, dtype=np.float32)
         self.t = 0
+        self._scan = None
         self.trail = [self.pose[:2].copy()]
         self._prev_dist = float(np.linalg.norm(self.pose[:2] - self.scn.goal))
         if self.obs_mode == "pixels":
@@ -200,6 +206,7 @@ class JetBotNavEnv(gym.Env):
         self.pose = np.array([x + v * np.cos(thm) * self.dt, y + v * np.sin(thm) * self.dt,
                               (th + w * self.dt + np.pi) % (2 * np.pi) - np.pi])
         self.t += 1
+        self._scan = None
         self.trail.append(self.pose[:2].copy())
 
         dist = float(np.linalg.norm(self.pose[:2] - self.scn.goal))
@@ -230,9 +237,23 @@ class JetBotNavEnv(gym.Env):
         bearing = np.arctan2(g[1], g[0]) - self.pose[2]
         return dist, bearing
 
+    def sensed_lidar(self) -> np.ndarray:
+        """The scan the robot actually receives this step (true scan unless corruption is enabled)."""
+        key = (self.t, *self.pose)
+        if self._scan is None or self._scan_key != key:
+            self._scan_key = key
+            scan = self.lidar()
+            if self.lidar_noise > 0:
+                scan = scan * (1 + self.np_random.uniform(-self.lidar_noise, self.lidar_noise, scan.shape))
+            if self.lidar_mask > 0:
+                m = self.np_random.random(scan.shape) < self.lidar_mask
+                scan = np.where(m, self.np_random.uniform(0.0, 0.3, scan.shape), scan)
+            self._scan = np.clip(scan, 0.0, self.max_range)
+        return self._scan
+
     def _obs(self):
         if self.obs_mode == "lidar":
-            scan = self.lidar() / self.max_range
+            scan = self.sensed_lidar() / self.max_range
             dist, bearing = self._goal_features()
             o = np.concatenate([scan * 2 - 1, [min(dist / 5.0, 1.0) * 2 - 1, np.sin(bearing), np.cos(bearing)],
                                 self.prev_action * np.array([2, 1]) - np.array([1, 0])])
