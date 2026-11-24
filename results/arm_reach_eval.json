@@ -1,0 +1,10 @@
+{
+  "episodes": 500,
+  "rl_success_rate": 1.0,
+  "rl_mean_error_mm": 5.058510803153098,
+  "rl_median_error_mm": 3.4033785258541616,
+  "rl_mean_steps": 9.2,
+  "ik_mean_error_mm": 5.324751518156222e-14,
+  "ik_success_rate": 1.0,
+  "train_time_s": 686.1323430538177
+}

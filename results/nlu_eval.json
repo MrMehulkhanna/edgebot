@@ -1,0 +1,997 @@
+{
+  "intents": [
+    "navigate",
+    "pick",
+    "place",
+    "pick_place",
+    "stack",
+    "stop",
+    "status",
+    "greet",
+    "help"
+  ],
+  "sizes": {
+    "train": 10800,
+    "val": 1350,
+    "test": 2700,
+    "test_noisy": 2700
+  },
+  "models": {
+    "bow_logreg": {
+      "intent_acc": {
+        "test": 0.9333333373069763,
+        "test_noisy": 0.9259259104728699
+      }
+    },
+    "jointbert_mini_scratch": {
+      "n_params": 320626,
+      "vocab_size": 232,
+      "val": {
+        "intent_acc": 1.0,
+        "slot_precision": 0.9994131455399061,
+        "slot_recall": 0.9994131455399061,
+        "slot_f1": 0.9994131455399061,
+        "frame_acc": 0.9992592592592593,
+        "confusion": [
+          [
+            150,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            150,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            150,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            150,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            150,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            150,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            150,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            150,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            150
+          ]
+        ]
+      },
+      "test": {
+        "intent_acc": 0.9385185185185185,
+        "slot_precision": 0.9809830310122879,
+        "slot_recall": 1.0,
+        "slot_f1": 0.9904002363018756,
+        "frame_acc": 0.9144444444444444,
+        "confusion": [
+          [
+            297,
+            0,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            289,
+            0,
+            11,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            254,
+            0,
+            0,
+            46
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
+            287,
+            3,
+            2
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            12,
+            7,
+            281,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            22,
+            52,
+            226
+          ]
+        ]
+      },
+      "test_noisy": {
+        "intent_acc": 0.9211111111111111,
+        "slot_precision": 0.9783174327840416,
+        "slot_recall": 0.9976415094339622,
+        "slot_f1": 0.9878849802948474,
+        "frame_acc": 0.8962962962962963,
+        "confusion": [
+          [
+            288,
+            0,
+            12,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            276,
+            0,
+            24,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            9,
+            0,
+            291,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            5,
+            3,
+            292,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            260,
+            0,
+            0,
+            40
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            4,
+            282,
+            13,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            19,
+            15,
+            266,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            21,
+            47,
+            232
+          ]
+        ]
+      }
+    },
+    "jointbert_distilbert": {
+      "backbone": "distilbert-base-uncased",
+      "n_params": 66376722,
+      "train_time_s": 184.62960696220398,
+      "test": {
+        "intent_acc": 0.9992592592592593,
+        "slot_precision": 0.9997018485390579,
+        "slot_recall": 1.0,
+        "slot_f1": 0.999850902042642,
+        "frame_acc": 0.9988888888888889,
+        "confusion": [
+          [
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            298,
+            0,
+            2,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300
+          ]
+        ]
+      },
+      "test_noisy": {
+        "intent_acc": 0.9944444444444445,
+        "slot_precision": 0.9973474801061007,
+        "slot_recall": 0.9976415094339622,
+        "slot_f1": 0.9974944731024318,
+        "frame_acc": 0.9929629629629629,
+        "confusion": [
+          [
+            299,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            295,
+            0,
+            5,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            5,
+            0,
+            295,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            296,
+            0,
+            4,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300
+          ]
+        ]
+      },
+      "latency_ms_cpu": 66.712827000174,
+      "latency_ms_cuda": 9.949572000095941
+    },
+    "jointbert_mini_distilled": {
+      "n_params": 487922,
+      "vocab_size": 2846,
+      "val": {
+        "intent_acc": 1.0,
+        "slot_precision": 0.9994131455399061,
+        "slot_recall": 0.9994131455399061,
+        "slot_f1": 0.9994131455399061,
+        "frame_acc": 0.9992592592592593,
+        "confusion": [
+          [
+            150,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            150,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            150,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            150,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            150,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            150,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            150,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            150,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            150
+          ]
+        ]
+      },
+      "test": {
+        "intent_acc": 0.9762962962962963,
+        "slot_precision": 0.9910793933987511,
+        "slot_recall": 0.9940351923650462,
+        "slot_f1": 0.9925550923168552,
+        "frame_acc": 0.975925925925926,
+        "confusion": [
+          [
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            261,
+            0,
+            39,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            298,
+            0,
+            0,
+            2
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            22,
+            1,
+            277
+          ]
+        ]
+      },
+      "test_noisy": {
+        "intent_acc": 0.9707407407407408,
+        "slot_precision": 0.9920564872021183,
+        "slot_recall": 0.9941037735849056,
+        "slot_f1": 0.99307907524665,
+        "frame_acc": 0.9692592592592593,
+        "confusion": [
+          [
+            300,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            269,
+            0,
+            31,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            20,
+            0,
+            280,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            296,
+            0,
+            3,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            300,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            23,
+            1,
+            276
+          ]
+        ]
+      }
+    }
+  },
+  "augmentation": {
+    "n_augmented": 42828,
+    "samples": [
+      "i need him to come now",
+      "i need you to go everything",
+      "i expect you to pause now",
+      "i need you to pause forever",
+      "train trains stop stop",
+      "okay stop stop remix",
+      "okay um stop stop",
+      "train train stop stop",
+      "now changing course for the charging dock station",
+      "now set ready for the charging dock thanks",
+      "now set charges for the charging dock unit",
+      "now set course to the charging dock where",
+      "now can you pick the purple crate up there",
+      "now do you pick the purple crate up now",
+      "when can you pick the purple crate up sometime",
+      "or can you pick the purple crate up now",
+      "but you can you help me quickly",
+      "could you can really help me quickly",
+      "could you let you help so quickly",
+      "could you can help help me to",
+      "please call right away",
+      "thursday evening right away",
+      "tuesday evening right out",
+      "please evening please suite",
+      "bill thomas"
+    ]
+  },
+  "deployed": "jointbert_mini_distilled",
+  "examples": [
+    {
+      "text": "hey jetbot move the red box from shelf a to the conveyor",
+      "intent": "pick_place",
+      "confidence": 0.9998,
+      "slots": {
+        "object": "box",
+        "source": "shelf a",
+        "destination": "conveyor",
+        "color": "red"
+      }
+    },
+    {
+      "text": "uh could you grab the blew crate on shelf b",
+      "intent": "pick",
+      "confidence": 0.9998,
+      "slots": {
+        "object": "crate",
+        "source": "shelf b",
+        "color": "blue"
+      }
+    },
+    {
+      "text": "stack the green blue and red blocks at the workbench",
+      "intent": "stack",
+      "confidence": 0.9998,
+      "slots": {
+        "colors": [
+          "green",
+          "blue",
+          "red"
+        ],
+        "destination": "workbench"
+      }
+    },
+    {
+      "text": "head over to the charging dock please",
+      "intent": "navigate",
+      "confidence": 0.9997,
+      "slots": {
+        "destination": "charging dock"
+      }
+    },
+    {
+      "text": "what are you carrying right now",
+      "intent": "status",
+      "confidence": 0.9997,
+      "slots": {}
+    },
+    {
+      "text": "haul the yellow parcel over to the packing station",
+      "intent": "pick_place",
+      "confidence": 0.9998,
+      "slots": {
+        "object": "parcel",
+        "destination": "packing station",
+        "color": "yellow"
+      }
+    }
+  ]
+}
