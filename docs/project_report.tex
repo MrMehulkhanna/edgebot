@@ -198,6 +198,57 @@ quantised pixel DQN mostly fails by timing out (dithering), which a safety filte
 quantisation (calibrated static INT8) is what fixes that.
 
 % =====================================================================
+\chapter{Recent techniques (2024--2026) tested on top of the project}
+\label{ch:recent}
+After the main system worked, I took three ideas from recent papers and tested them on EdgeBot.
+Each one is explained in plain words: \emph{the paper, what it says, what I did, what happened, why it matters.}
+The deployed model is not changed; these are extra experiments on the same 300 unseen layouts
+(\texttt{scripts/eval\_robustness.py}).
+
+\section*{1. Faulty lidar: testing like a real robot}
+\textbf{Paper.} Real lidars give noisy and sometimes fake readings, and sim-to-real work now adds this
+corruption on purpose~\cite{sim2real2025,sim2realsurvey2025,navrlpp2026}. Omni-Perception (2025)~\cite{omni2025}
+trains with 10\% of lidar beams replaced by fake short readings (0--0.3\,m) and 10\% distance noise.\\
+\textbf{What I did.} Added the same corruption to my simulator (off by default) and re-tested every policy.\\
+\textbf{What happened.} The PPO policy itself is fairly robust (96\%$\to$94\% success). But my original
+shield \emph{failed}: it believed the fake short readings were obstacles and froze the robot (3\% success).
+
+\section*{2. Fixing the shield: a robust (median-filtered) shield}
+\textbf{Idea.} A real obstacle near the robot covers at least two neighbouring beams; a fake reading is
+usually a single beam. So before checking safety, the shield now takes the median of each beam and its two
+neighbours, a classic sensor filter that removes single spikes.\\
+\textbf{What happened.} On clean lidar the robust shield behaves exactly like the original (96\% success,
+0\% collisions). On corrupted lidar it brings success back to 94--95\% and keeps collisions at 0--1\%
+(versus 3\% with no shield), for both the FP32 and the INT8 policy.
+\begin{center}\fit{tab_robust}\end{center}
+
+\section*{3. Training with noise (domain randomisation)}
+\textbf{Paper.} Sim-to-real papers train with sensor noise so the policy gets used to
+it~\cite{sim2real2025,omni2025}.\\
+\textbf{What I did.} Trained a second PPO for the same 5M steps with the Omni-Perception corruption
+switched on during training.\\
+\textbf{What happened.} It did \emph{not} help here: 90.7\% on clean lidar and 89.3\% on corrupted lidar,
+both lower than the normal PPO. My policy was already robust, and the noise made learning harder. This is
+a useful negative result: domain randomisation is not automatically better, and the cheap fix (the robust
+shield) worked better than retraining.
+
+\section*{4. A newer network design: SimBa (ICLR 2025)}
+\textbf{Paper.} SimBa~\cite{simba2025} shows that RL agents learn better with three simple parts:
+input normalisation, residual blocks and layer normalisation. A follow-up adds further
+normalisation~\cite{simbav2}.\\
+\textbf{What I did.} Replaced the plain network of PPO with a SimBa network (same size, same settings, one seed).\\
+\textbf{What happened.} SimBa reached 90\% training success about \textbf{4$\times$ faster} (0.12M vs 0.53M
+steps), which matches the paper's claim of better sample efficiency. Its final score after 5M steps was
+slightly lower (93.7\% vs 96.0\%), and with the robust shield on corrupted lidar it was the best model
+(95.0\%, 0.7\% collisions).
+\begin{center}\fit{tab_simba}\end{center}
+
+\textbf{What this chapter adds.} The project now follows the latest practice in RL for robots: testing
+under realistic sensor faults, trying domain randomisation, and using a 2025 network design. The main new
+lesson is that a safety shield must itself be robust to bad sensor data; the median-filtered shield keeps
+the robot safe without stopping it.
+
+% =====================================================================
 \chapter{The non-RL parts, in one page}
 \label{ch:rest}
 \begin{itemize}
@@ -219,7 +270,9 @@ EdgeBot shows the course's RL path end to end: tabular Q-learning/SARSA $\to$ DQ
 26 KB INT8 policy, plus a new, measured contribution: a map-free lidar shield that removes collisions for
 both full-precision and quantised policies. Limitations: simulation only (no real robot), latency measured
 on a laptop CPU not a Jetson, a 24-beam lidar can miss very thin obstacles between beams, and the shield
-does not fix timeouts.
+does not fix timeouts. Under fake lidar readings the original shield freezes the robot; the robust
+(median-filtered) shield of Chapter~\ref{ch:recent} fixes this. SimBa and domain randomisation were tested
+with one seed each.
 
 \begin{thebibliography}{99}
 \bibitem{sutton} R.~S.~Sutton and A.~G.~Barto, \emph{Reinforcement Learning: An Introduction}, 2nd ed., MIT Press, 2018.
@@ -239,5 +292,11 @@ does not fix timeouts.
 \bibitem{tinybert} X.~Jiao et al., ``TinyBERT: Distilling BERT for natural language understanding,'' Findings of EMNLP, 2020.
 \bibitem{whisper} A.~Radford et al., ``Robust speech recognition via large-scale weak supervision,'' ICML, 2023.
 \bibitem{vits} J.~Kim, J.~Kong and J.~Son, ``Conditional variational autoencoder with adversarial learning for end-to-end text-to-speech,'' ICML, 2021.
+\bibitem{simba2025} H.~Lee et al., ``SimBa: Simplicity bias for scaling up parameters in deep reinforcement learning,'' ICLR, 2025 (arXiv:2410.09754).
+\bibitem{simbav2} ``Hyperspherical normalization for scalable deep reinforcement learning,'' arXiv:2502.15280, 2025.
+\bibitem{omni2025} Z.~Wang et al., ``Omni-Perception: Omnidirectional collision avoidance for legged locomotion in dynamic environments,'' arXiv:2505.19214, 2025.
+\bibitem{sim2real2025} ``Sim-to-real transfer for mobile robots with reinforcement learning: from NVIDIA Isaac Sim to Gazebo and real ROS 2 robots,'' arXiv:2501.02902, 2025.
+\bibitem{sim2realsurvey2025} ``A survey of sim-to-real methods in RL: progress, prospects and challenges with foundation models,'' arXiv:2502.13187, 2025.
+\bibitem{navrlpp2026} ``NavRL++: A system-level framework for improving sim-to-real transfer in reinforcement learning-based robot navigation,'' arXiv:2605.15559, 2026.
 \end{thebibliography}
 \end{document}
