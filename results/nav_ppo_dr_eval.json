@@ -1,0 +1,17 @@
+{
+  "episodes": 300,
+  "success_rate": 0.9066666666666666,
+  "collision_rate": 0.04666666666666667,
+  "timeout_rate": 0.04666666666666667,
+  "mean_return": 14.443947963282723,
+  "std_return": 7.383986720086618,
+  "mean_steps": 71.54333333333334,
+  "path_efficiency": 0.8791894329388013,
+  "algorithm": "PPO",
+  "arch": "mlp",
+  "lidar_noise": 0.1,
+  "lidar_mask": 0.1,
+  "action_mode": "continuous",
+  "train_steps": 5000000,
+  "train_time_s": 1796.3168017864227
+}
